@@ -1768,7 +1768,7 @@
         grid.appendChild(canvas);
       }
 
-      // Shuffle correct image position every 2500ms
+      // Shuffle correct image position every 2000ms
       let currentCorrect = matchIndex;
       shuffleInterval = setInterval(() => {
         const images = grid.querySelectorAll('.grid-image');
@@ -1810,7 +1810,7 @@
             captcha.correctIndex = currentCorrect;
           }, 300);
         }
-      }, 2500);
+      }, 2000);
     }
 
     function handleImageClick(index, canvas) {
@@ -1819,7 +1819,7 @@
       const images = document.querySelectorAll('.grid-image');
       let correctIndex = parseInt(images[captcha.correctIndex]?.dataset.index ?? captcha.correctIndex);
 
-      if (index === correctIndex || captcha.wrongAttempts >= 3) {
+      if (index === correctIndex || captcha.wrongAttempts >= 4) {
         // Correct!
         clearInterval(shuffleInterval);
         canvas.classList.add('correct');

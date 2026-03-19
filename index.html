@@ -18,7 +18,7 @@
 
     .captcha-container {
       width: 420px;
-      background: #fff;
+      background: rgba(255,255,255,0.95);
       border-radius: 12px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
       padding: 24px;
@@ -1155,6 +1155,33 @@
       messageArea.className = 'message-area';
     }
 
+    // Stage background darkening
+    const stageBackgrounds = {
+      1: '#f0f2f5',
+      2: '#e0e2e5',
+      3: '#c8cad0',
+      4: '#a0a5b0',
+      5: '#707580',
+      6: '#454550'
+    };
+
+    const stageHeaderShadows = {
+      1: 'none',
+      2: 'none',
+      3: 'none',
+      4: '0 0 2px rgba(229,57,53,0.15)',
+      5: '0 0 4px rgba(229,57,53,0.25)',
+      6: '0 0 8px rgba(229,57,53,0.35)'
+    };
+
+    function applyStageTheme(n) {
+      const stageNum = typeof n === 'string' ? parseInt(n) : n;
+      const bg = stageBackgrounds[stageNum];
+      const shadow = stageHeaderShadows[stageNum];
+      if (bg) document.body.style.backgroundColor = bg;
+      if (shadow) document.querySelector('.header h1').style.textShadow = shadow;
+    }
+
     function advanceToStage(n) {
       const current = document.querySelector('.stage:not(.hidden)');
       if (current) current.classList.add('hidden');
@@ -1167,6 +1194,7 @@
       captcha.stage = n;
       captcha.wrongAttempts = 0;
       clearMessage();
+      applyStageTheme(n);
     }
 
     // ============================================
@@ -2494,6 +2522,9 @@
     // ============================================
     // INITIALIZATION
     // ============================================
+
+    // Set body background transition for smooth darkening
+    document.body.style.transition = 'background-color 1.2s ease-in-out';
 
     startTimer();
     initStage1();

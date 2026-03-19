@@ -1001,6 +1001,16 @@
           </p>
           <button class="submit-btn" id="enableMicBtn">🎤 Enable Microphone</button>
           <div id="micStatusText" style="font-size: 13px; text-align: center; margin-top: 12px; min-height: 20px;"></div>
+          <div id="micRetryArea" class="hidden" style="margin-top: 12px; text-align: center;">
+            <p style="font-size: 13px; color: #666; margin-bottom: 10px;">If you can't enable your mic, you can complete an alternative verification instead.</p>
+            <button class="submit-btn" id="retryMicBtn" style="margin-right: 8px; font-size: 12px;">🔄 Try Again</button>
+            <button class="submit-btn" id="skipToLongerPathBtn" style="font-size: 12px; background: linear-gradient(90deg, #777, #999);">Skip to Alternative Path</button>
+          </div>
+        </div>
+        <div id="stage4NoSupport" class="hidden">
+          <p style="font-weight: 600; color: #E65100; text-align: center; margin-bottom: 12px;">We're sorry — your browser doesn't support voice verification 😞</p>
+          <p style="font-size: 13px; color: #666; text-align: center; margin-bottom: 16px;">No worries! You'll just need to complete a slightly longer path. We appreciate your patience!</p>
+          <button class="submit-btn" id="noSupportSkipBtn" style="font-size: 13px;">Continue to Alternative Path →</button>
         </div>
         <div id="stage4Challenge" class="hidden">
           <p class="audio-prompt">Listen to the word and say it back clearly</p>
@@ -1010,6 +1020,14 @@
           </div>
           <div class="word-hint" id="wordHint"></div>
           <p class="listening-text hidden" id="listeningText">Listening...</p>
+        </div>
+        <div id="stage4LongerPath" class="hidden">
+          <p style="font-weight: 600; color: #333; text-align: center; margin-bottom: 8px;">Alternative Verification 📝</p>
+          <p style="font-size: 13px; color: #666; text-align: center; margin-bottom: 12px;">We appreciate your patience! Please type the word shown below:</p>
+          <canvas id="longerPathCanvas" width="280" height="80" style="display: block; margin: 0 auto 12px; border-radius: 6px; background: #f9f9f9;"></canvas>
+          <input type="text" id="longerPathInput" class="text-input" placeholder="Type the word" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 16px; box-sizing: border-box;">
+          <button class="submit-btn" id="longerPathSubmit" style="margin-top: 12px;">Submit</button>
+          <div id="longerPathStatus" style="font-size: 13px; text-align: center; margin-top: 10px; min-height: 20px;"></div>
         </div>
       </div>
 
@@ -1412,6 +1430,96 @@
       } catch(e) { /* silent fail */ }
     }
 
+    // Interaction sound: subtle tick/dink/clunk for clicks and typing
+    let interactionAudioCtx = null;
+    function getInteractionCtx() {
+      if (!interactionAudioCtx) {
+        interactionAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      return interactionAudioCtx;
+    }
+
+    function playInteractionSound() {
+      try {
+        const ctx = getInteractionCtx();
+        const now = ctx.currentTime;
+        const gain = ctx.createGain();
+
+        // Randomly pick between tick, dink, clunk
+        const variant = Math.floor(Math.random() * 3);
+
+        if (variant === 0) {
+          // Tick: short sine blip at high freq
+          const osc = ctx.createOscillator();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(2200 + Math.random() * 800, now);
+          osc.frequency.exponentialRampToValueAtTime(1200, now + 0.025);
+          osc.connect(gain);
+          gain.gain.setValueAtTime(0.08, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
+          osc.start(now);
+          osc.stop(now + 0.03);
+        } else if (variant === 1) {
+          // Dink: triangle wave, slightly longer
+          const osc = ctx.createOscillator();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(1800 + Math.random() * 600, now);
+          osc.frequency.exponentialRampToValueAtTime(900, now + 0.04);
+          osc.connect(gain);
+          gain.gain.setValueAtTime(0.07, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.045);
+          osc.start(now);
+          osc.stop(now + 0.045);
+        } else {
+          // Clunk: square wave, low freq, very short
+          const osc = ctx.createOscillator();
+          osc.type = 'square';
+          osc.frequency.setValueAtTime(400 + Math.random() * 200, now);
+          osc.frequency.exponentialRampToValueAtTime(200, now + 0.02);
+          osc.connect(gain);
+          gain.gain.setValueAtTime(0.06, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.025);
+          osc.start(now);
+          osc.stop(now + 0.025);
+        }
+
+        gain.connect(ctx.destination);
+      } catch(e) { /* silent fail */ }
+    }
+
+    // Submit sound: stronger, deeper, more satisfying
+    function playSubmitSound() {
+      try {
+        const ctx = getInteractionCtx();
+        const now = ctx.currentTime;
+        const gain = ctx.createGain();
+
+        // Two-tone submit: low thump + mid ring
+        const osc1 = ctx.createOscillator();
+        osc1.type = 'sine';
+        osc1.frequency.setValueAtTime(600, now);
+        osc1.frequency.exponentialRampToValueAtTime(300, now + 0.08);
+
+        const osc2 = ctx.createOscillator();
+        osc2.type = 'triangle';
+        osc2.frequency.setValueAtTime(1000, now);
+        osc2.frequency.exponentialRampToValueAtTime(800, now + 0.1);
+
+        osc1.connect(gain);
+        osc2.connect(gain);
+        gain.connect(ctx.destination);
+
+        gain.gain.setValueAtTime(0.18, now);
+        gain.gain.exponentialRampToValueAtTime(0.08, now + 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+
+        osc1.start(now);
+        osc1.stop(now + 0.12);
+        osc2.start(now);
+        osc2.stop(now + 0.12);
+      } catch(e) { /* silent fail */ }
+    }
+
     // ============================================
     // PLAYFUL ELEMENTS: Stage 4 button hover
     // ============================================
@@ -1758,13 +1866,8 @@
       // Check for SpeechRecognition support
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (!SpeechRecognition) {
-        // Skip stage if not available
-        showMessage("Voice verification unavailable in this browser. Skipping this step for you. Lucky day!");
-        setProgress(88);
-        setTimeout(() => {
-          advanceToStage(5);
-          initStage5();
-        }, 1500);
+        // No voice support at all — show apology + longer path option
+        showMicApology('stage4NoSupport', 'noSupportSkipBtn');
         return;
       }
 
@@ -1785,23 +1888,147 @@
       });
     }
 
+    function showMicApology(noSupportDivId, skipBtnId) {
+      // Hide all other stage4 sub-divs
+      document.getElementById('stage4Ready').classList.add('hidden');
+      document.getElementById('stage4MicPrompt').classList.add('hidden');
+      document.getElementById('stage4Challenge').classList.add('hidden');
+      document.getElementById('stage4LongerPath').classList.add('hidden');
+
+      // Show the no-support apology
+      const noSupportDiv = document.getElementById(noSupportDivId);
+      if (noSupportDiv) noSupportDiv.classList.remove('hidden');
+
+      // Wire skip button to longer path
+      const skipBtn = document.getElementById(skipBtnId);
+      if (skipBtn) {
+        skipBtn.addEventListener('click', () => {
+          showLongerPath();
+        });
+      }
+    }
+
+    function showLongerPath() {
+      // Hide all other stage4 sub-divs
+      document.getElementById('stage4Ready').classList.add('hidden');
+      document.getElementById('stage4MicPrompt').classList.add('hidden');
+      document.getElementById('stage4Challenge').classList.add('hidden');
+      document.getElementById('stage4NoSupport').classList.add('hidden');
+
+      // Show the longer path
+      document.getElementById('stage4LongerPath').classList.remove('hidden');
+
+      // Generate a harder word for the longer path
+      const harderWords = ['authenticate', 'verification', 'certificate', 'safeguarded', 'unbreakable', 'passphrase', 'multifactor', 'bypassproof'];
+      captcha.longerPathWord = harderWords[Math.floor(Math.random() * harderWords.length)];
+
+      // Render on canvas with extra distortion
+      renderLongerPathWord(captcha.longerPathWord);
+
+      // Wire up submit
+      const input = document.getElementById('longerPathInput');
+      const submitBtn = document.getElementById('longerPathSubmit');
+      const statusEl = document.getElementById('longerPathStatus');
+
+      function handleLongerPathSubmit() {
+        const val = input.value.trim().toLowerCase();
+        if (val === captcha.longerPathWord) {
+          statusEl.textContent = "✓ Correct! Thank you for your patience. Moving on...";
+          statusEl.style.color = '#2E7D32';
+          setProgress(88);
+          setTimeout(() => {
+            advanceToStage(5);
+            initStage5();
+          }, 2000);
+        } else {
+          captcha.wrongAttempts++;
+          statusEl.textContent = "Almost! Check your spelling and try again. You've got this!";
+          statusEl.style.color = '#1565C0';
+          if (captcha.wrongAttempts >= 3) {
+            statusEl.textContent = "✓ Close enough! Thanks for sticking with it!";
+            statusEl.style.color = '#2E7D32';
+            setProgress(88);
+            setTimeout(() => {
+              advanceToStage(5);
+              initStage5();
+            }, 2000);
+          }
+        }
+      }
+
+      submitBtn.addEventListener('click', handleLongerPathSubmit);
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') handleLongerPathSubmit();
+      });
+
+      // Enable typing sounds on this input
+      input.addEventListener('keydown', (e) => {
+        if (e.key.length === 1) playInteractionSound();
+      });
+    }
+
+    function renderLongerPathWord(word) {
+      const canvas = document.getElementById('longerPathCanvas');
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Background
+      ctx.fillStyle = '#f9f9f9';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Extra noise lines
+      for (let i = 0; i < 5; i++) {
+        ctx.beginPath();
+        ctx.moveTo(Math.random() * canvas.width, Math.random() * canvas.height);
+        ctx.lineTo(Math.random() * canvas.width, Math.random() * canvas.height);
+        ctx.strokeStyle = `rgba(${Math.random()*150+100}, ${Math.random()*150+100}, ${Math.random()*150+100}, 0.4)`;
+        ctx.lineWidth = Math.random() * 2 + 0.5;
+        ctx.stroke();
+      }
+
+      // Render word with distortion
+      const fontSize = 26 + Math.floor(Math.random() * 8);
+      const fontFamilies = ['Arial', 'Georgia', 'Courier New', 'Verdana', 'Impact'];
+      ctx.font = `${fontSize}px ${fontFamilies[Math.floor(Math.random() * fontFamilies.length)]}`;
+      ctx.save();
+      ctx.translate(canvas.width / 2, canvas.height / 2 + 4);
+      ctx.rotate((Math.random() - 0.5) * 0.12);
+
+      // Shadow
+      ctx.fillStyle = 'rgba(0,0,0,0.15)';
+      ctx.fillText(word, -ctx.measureText(word).width / 2 + 1, 1);
+
+      // Main text
+      ctx.fillStyle = `hsl(${Math.random()*360}, 40%, 30%)`;
+      ctx.fillText(word, -ctx.measureText(word).width / 2, 0);
+
+      ctx.restore();
+
+      // Extra noise dots
+      for (let i = 0; i < 30; i++) {
+        ctx.fillStyle = `rgba(${Math.random()*200}, ${Math.random()*200}, ${Math.random()*200}, 0.5)`;
+        ctx.beginPath();
+        ctx.arc(Math.random() * canvas.width, Math.random() * canvas.height, Math.random() * 2 + 0.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
     function initMicPermissionPrompt() {
       const enableMicBtn = document.getElementById('enableMicBtn');
       const statusText = document.getElementById('micStatusText');
+      const retryArea = document.getElementById('micRetryArea');
 
       // Check if getUserMedia is available
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        statusText.textContent = "Mic access denied! No worries — we'll skip voice verification. Lucky day! 🍀";
-        statusText.style.color = '#2E7D32';
-        setTimeout(() => {
-          advanceToStage(5);
-          initStage5();
-        }, 1000);
+        statusText.textContent = "We're sorry — your browser doesn't support microphone access 😞";
+        statusText.style.color = '#E65100';
+        retryArea.classList.remove('hidden');
         return;
       }
 
       enableMicBtn.addEventListener('click', async () => {
         enableMicBtn.disabled = true;
+        statusText.textContent = '';
         try {
           const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
           // Success - stop the stream immediately, we just needed permission
@@ -1812,16 +2039,28 @@
             document.getElementById('stage4MicPrompt').classList.add('hidden');
             document.getElementById('stage4Challenge').classList.remove('hidden');
             initVoiceChallenge();
-          }, 1000);
+          }, 2500);
         } catch (err) {
           // Permission denied or other error
-          statusText.textContent = "Mic access denied! No worries — we'll skip voice verification. Lucky day! 🍀";
-          statusText.style.color = '#2E7D32';
-          setTimeout(() => {
-            advanceToStage(5);
-            initStage5();
-          }, 1000);
+          statusText.textContent = "We couldn't access your mic. If you denied permission, you can try again or use an alternative path.";
+          statusText.style.color = '#E65100';
+          enableMicBtn.disabled = false;
+          enableMicBtn.textContent = '🎤 Try Again';
+          retryArea.classList.remove('hidden');
         }
+      });
+
+      // Retry button: re-enable the mic button
+      document.getElementById('retryMicBtn').addEventListener('click', () => {
+        enableMicBtn.disabled = false;
+        enableMicBtn.textContent = '🎤 Enable Microphone';
+        statusText.textContent = '';
+        retryArea.classList.add('hidden');
+      });
+
+      // Skip to longer path
+      document.getElementById('skipToLongerPathBtn').addEventListener('click', () => {
+        showLongerPath();
       });
     }
 
@@ -2529,6 +2768,23 @@
     startTimer();
     initStage1();
     startContainerTitleTimer();
+
+    // Interaction sounds: play tick/dink/clunk on clicks, submit sound on buttons
+    document.querySelector('.captcha-container').addEventListener('click', (e) => {
+      const isSubmit = e.target.closest('.submit-btn') || e.target.closest('.audio-btn');
+      if (isSubmit) {
+        playSubmitSound();
+      } else {
+        playInteractionSound();
+      }
+    });
+
+    // Typing sounds on any text input in the captcha
+    document.querySelector('.captcha-container').addEventListener('keydown', (e) => {
+      if (e.target.tagName === 'INPUT' && e.target.type === 'text' && e.key.length === 1) {
+        playInteractionSound();
+      }
+    });
 
     // Continue button handler
     document.getElementById('continueBtn').addEventListener('click', () => {

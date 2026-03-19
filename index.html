@@ -1,0 +1,2516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Human Verification</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f0f2f5;
+      font-family: system-ui, -apple-system, sans-serif;
+    }
+
+    .captcha-container {
+      width: 420px;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      padding: 24px;
+      position: relative;
+      transition: border-color 0.3s;
+    }
+
+    .captcha-container.scare-flash {
+      border: 3px solid #E53935;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 4px;
+    }
+
+    .header h1 {
+      font-size: 18px;
+      color: #333;
+      font-weight: 600;
+    }
+
+    .timer {
+      font-size: 11px;
+      color: #999;
+      margin-top: 4px;
+    }
+
+    .subtitle {
+      font-size: 13px;
+      color: #666;
+      margin-bottom: 16px;
+    }
+
+    .progress-section {
+      margin-bottom: 20px;
+    }
+
+    .progress-track {
+      width: 100%;
+      height: 8px;
+      background: #e8e8e8;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 6px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #4A90D9, #357ABD);
+      border-radius: 4px;
+      transition: width 0.5s ease-out;
+    }
+
+    .progress-fill.pulse {
+      animation: progress-pulse 0.5s ease-out;
+    }
+
+    @keyframes progress-pulse {
+      0%, 100% { transform: scaleY(1); }
+      50% { transform: scaleY(1.5); }
+    }
+
+    .progress-text {
+      font-size: 12px;
+      color: #666;
+      text-align: right;
+    }
+
+    .message-area {
+      font-size: 13px;
+      color: #2E7D32;
+      margin-top: 8px;
+      min-height: 20px;
+      transition: opacity 0.3s;
+    }
+
+    .message-area.blue { color: #1565C0; }
+    .message-area.red { color: #E53935; font-weight: 600; }
+
+    .stage {
+      opacity: 1;
+      transition: opacity 0.3s;
+      min-height: 150px;
+    }
+
+    .stage.hidden {
+      opacity: 0;
+      position: absolute;
+      pointer-events: none;
+    }
+
+    .footer {
+      margin-top: 20px;
+      text-align: right;
+      font-size: 11px;
+      color: #999;
+    }
+
+    .footer a {
+      color: #999;
+      text-decoration: underline;
+      cursor: pointer;
+    }
+
+    .footer a:hover { color: #666; }
+
+    .shield-text {
+      font-size: 10px;
+      color: #bbb;
+      text-align: center;
+      margin-top: 12px;
+    }
+
+    /* Stage 1 */
+    .verify-btn {
+      display: block;
+      margin: 30px auto;
+      padding: 12px 32px;
+      background: #4A90D9;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+      box-shadow: 0 2px 4px rgba(74,144,217,0.3);
+      transition: all 0.2s;
+      position: relative;
+    }
+
+    .verify-btn:hover {
+      background: #5BA0E9;
+      transform: scale(1.02);
+    }
+
+    .verify-btn:disabled {
+      cursor: default;
+      opacity: 0.9;
+    }
+
+    .spinner {
+      width: 24px;
+      height: 24px;
+      border: 3px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Stage 2 */
+    .stage2-prompt {
+      font-size: 14px;
+      color: #333;
+      margin-bottom: 12px;
+      text-align: center;
+    }
+
+    .target-canvas {
+      display: block;
+      margin: 0 auto 16px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+
+    .image-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      max-width: 320px;
+      margin: 0 auto;
+    }
+
+    .grid-image {
+      width: 100px;
+      height: 100px;
+      border: 2px solid transparent;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: border-color 0.2s, transform 0.3s ease;
+    }
+
+    .grid-image:hover { border-color: #4A90D9; }
+    .grid-image.wrong { border-color: #E53935; animation: flash-red 0.3s; }
+    .grid-image.correct { border-color: #2E7D32; }
+
+    @keyframes flash-red {
+      50% { border-color: #E53935; }
+    }
+
+    /* Stage 3 */
+    .word-canvas {
+      display: block;
+      margin: 0 auto 16px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      background: #f9f9f9;
+    }
+
+    .stage3-input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 16px;
+      transition: margin-left 0.3s;
+      outline: none;
+    }
+
+    .stage3-input:focus { border-color: #4A90D9; }
+
+    .submit-btn {
+      display: block;
+      margin: 12px auto 0;
+      padding: 10px 24px;
+      background: #4A90D9;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .submit-btn:hover { background: #5BA0E9; }
+
+    /* Stage 4 */
+    .audio-notice {
+      background: #FFF8E1;
+      border-left: 4px solid #FFB300;
+      padding: 12px;
+      border-radius: 4px;
+      margin-bottom: 16px;
+      font-size: 13px;
+      color: #5D4037;
+    }
+
+    .audio-prompt {
+      font-size: 14px;
+      color: #333;
+      text-align: center;
+      margin-bottom: 16px;
+    }
+
+    .audio-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      margin-bottom: 16px;
+    }
+
+    .audio-btn {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      border: none;
+      background: #4A90D9;
+      color: #fff;
+      font-size: 20px;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .audio-btn:hover { background: #5BA0E9; transform: scale(1.05); }
+    .audio-btn.recording { background: #E53935; animation: pulse-rec 1s infinite; }
+
+    @keyframes pulse-rec {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(229,57,53,0.4); }
+      50% { box-shadow: 0 0 0 12px rgba(229,57,53,0); }
+    }
+
+    .word-hint {
+      font-size: 10px;
+      color: #ccc;
+      text-align: center;
+      margin-bottom: 16px;
+      user-select: none;
+    }
+
+    .listening-text {
+      font-size: 13px;
+      color: #E53935;
+      text-align: center;
+      animation: blink 0.8s infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    /* Stage 5 */
+    .sequence-display {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .seq-dot {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .dot-area {
+      width: 200px;
+      height: 200px;
+      margin: 0 auto;
+      position: relative;
+    }
+
+    .clickable-dot {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      position: absolute;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.5s ease;
+      user-select: none;
+    }
+
+    .clickable-dot:hover { transform: scale(1.1); }
+    .clickable-dot.selected { box-shadow: 0 0 0 3px #333; }
+
+    .sequence-hint {
+      text-align: center;
+      font-size: 12px;
+      color: #666;
+      margin-top: 12px;
+    }
+
+    /* Fake checkbox */
+    .fake-checkbox-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin: 20px 0;
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      max-width: 240px;
+      margin-left: auto;
+      margin-right: auto;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+
+    .fake-checkbox-container:hover { border-color: #bbb; }
+
+    .fake-checkbox {
+      width: 20px;
+      height: 20px;
+      border: 2px solid #ccc;
+      border-radius: 3px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #fff;
+    }
+
+    .fake-checkbox.checked {
+      border-color: #2E7D32;
+      background: #2E7D32;
+      color: #fff;
+    }
+
+    .fake-checkbox-label {
+      font-size: 13px;
+      color: #333;
+    }
+
+    /* Stage 6 */
+    .code-header {
+      font-size: 16px;
+      color: #333;
+      font-weight: 600;
+      text-align: center;
+      margin-bottom: 4px;
+    }
+
+    .code-prompt {
+      font-size: 14px;
+      color: #666;
+      text-align: center;
+      margin-bottom: 12px;
+    }
+
+    .code-canvas {
+      display: block;
+      margin: 0 auto 16px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+
+    .code-input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 16px;
+      text-align: center;
+      letter-spacing: 8px;
+      outline: none;
+    }
+
+    .code-input:focus { border-color: #4A90D9; }
+
+    .countdown-text {
+      font-size: 18px;
+      font-weight: 700;
+      text-align: center;
+      margin: 20px 0;
+    }
+
+    .countdown-text.red { color: #E53935; }
+    .countdown-text.green { color: #2E7D32; }
+
+    /* Success screen */
+    .success-screen {
+      text-align: center;
+      padding: 20px 0;
+    }
+
+    .success-check {
+      width: 60px;
+      height: 60px;
+      background: #2E7D32;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 16px;
+      color: #fff;
+      font-size: 28px;
+    }
+
+    .success-title {
+      font-size: 18px;
+      color: #2E7D32;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .success-subtitle {
+      font-size: 13px;
+      color: #666;
+      margin-bottom: 20px;
+    }
+
+    .continue-btn {
+      padding: 12px 32px;
+      background: #4A90D9;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .continue-btn:hover { background: #5BA0E9; }
+
+    .confetti-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      overflow: hidden;
+      pointer-events: none;
+      border-radius: 12px;
+    }
+
+    .confetti {
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      opacity: 0.8;
+      animation: confetti-fall 3s ease-in forwards;
+    }
+
+    @keyframes confetti-fall {
+      0% {
+        transform: translateY(-10px) rotate(0deg);
+        opacity: 1;
+      }
+      100% {
+        transform: translateY(400px) rotate(720deg);
+        opacity: 0;
+      }
+    }
+
+    .device-fingerprint {
+      text-align: center;
+      font-size: 13px;
+      color: #666;
+      margin: 16px 0;
+    }
+
+    .hidden { display: none !important; }
+
+    /* Playful animations */
+    @keyframes wiggle {
+      0%, 100% { transform: rotate(0deg); }
+      25% { transform: rotate(-2deg); }
+      75% { transform: rotate(2deg); }
+    }
+
+    @keyframes bounce-anim {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-12px); }
+    }
+
+    @keyframes happy-bounce {
+      0%, 100% { transform: translateY(0); }
+      33% { transform: translateY(-8px); }
+      66% { transform: translateY(-4px); }
+    }
+
+    @keyframes happy-shake {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-3px); }
+      40% { transform: translateX(3px); }
+      60% { transform: translateX(-2px); }
+      80% { transform: translateX(2px); }
+    }
+
+    @keyframes mic-pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.2); }
+    }
+
+    @keyframes sparkle {
+      0%, 100% { box-shadow: 0 0 4px gold; }
+      50% { box-shadow: 0 0 16px gold, 0 0 24px rgba(255,215,0,0.5); }
+    }
+
+    @keyframes code-bounce {
+      0%, 100% { transform: translateY(0) scale(1); }
+      50% { transform: translateY(-10px) scale(1.1); }
+    }
+
+    @keyframes screen-shake {
+      0%, 100% { transform: translate(0, 0); }
+      10% { transform: translate(-5px, -3px); }
+      20% { transform: translate(5px, 3px); }
+      30% { transform: translate(-4px, 2px); }
+      40% { transform: translate(4px, -2px); }
+      50% { transform: translate(-2px, 1px); }
+      60% { transform: translate(2px, -1px); }
+    }
+
+    .container-shake {
+      animation: screen-shake 0.5s ease-out;
+    }
+
+    @keyframes falling-emoji {
+      0% { transform: translateY(-40px) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(450px) rotate(360deg); opacity: 0.5; }
+    }
+
+    .falling-emoji {
+      position: absolute;
+      font-size: 24px;
+      animation: falling-emoji 2.5s ease-in forwards;
+      pointer-events: none;
+      z-index: 100;
+    }
+
+    .celebrate-bounce {
+      animation: happy-bounce 0.3s ease 3;
+    }
+
+    .celebrate-shake {
+      animation: happy-shake 0.4s ease;
+    }
+
+    .celebrate-spin {
+      animation: spin 0.6s ease;
+    }
+
+    .celebrate-pulse {
+      animation: mic-pulse 0.3s ease 3;
+    }
+
+    .dot-sparkle {
+      background: gold !important;
+      animation: sparkle 0.4s ease 3;
+    }
+
+    .code-celebrate {
+      animation: code-bounce 0.4s ease 3;
+    }
+
+    /* Toast notification */
+    .toast {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-80px);
+      background: #333;
+      color: #fff;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 14px;
+      z-index: 10000;
+      opacity: 0;
+      transition: transform 0.4s ease, opacity 0.4s ease;
+      pointer-events: none;
+      max-width: 400px;
+      text-align: center;
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    .toast.bounce-in {
+      animation: bounce-anim 0.5s ease;
+    }
+
+    /* Progress milestone message */
+    .milestone-msg {
+      font-size: 9px;
+      color: #999;
+      text-align: center;
+      margin-top: 2px;
+      opacity: 0;
+      transition: opacity 0.3s;
+      min-height: 12px;
+    }
+
+    .milestone-msg.visible {
+      opacity: 1;
+    }
+
+    /* Skip link */
+    .skip-link {
+      display: block;
+      font-size: 8px;
+      color: #f0f0f0;
+      text-align: center;
+      margin-top: 8px;
+      cursor: pointer;
+      user-select: none;
+      transition: color 0.2s;
+    }
+
+    .skip-link:hover {
+      color: #ddd;
+    }
+
+    /* What is this tooltip */
+    .what-tooltip {
+      position: absolute;
+      bottom: 50px;
+      right: 24px;
+      background: #333;
+      color: #fff;
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-size: 12px;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+      max-width: 260px;
+      z-index: 50;
+    }
+
+    .what-tooltip.visible {
+      opacity: 1;
+    }
+
+    /* Loading text for stage 3 */
+    .loading-text {
+      font-size: 11px;
+      color: #999;
+      text-align: center;
+      margin-top: 4px;
+      min-height: 16px;
+    }
+
+    /* Enhanced success */
+    .success-title.big {
+      font-size: 28px;
+      color: #2E7D32;
+      font-weight: 700;
+    }
+
+    .success-subtitle.fun {
+      font-style: italic;
+    }
+
+    .success-stats {
+      font-size: 12px;
+      color: #999;
+      margin-top: 4px;
+    }
+
+    .continue-btn.done {
+      background: #43A047;
+    }
+
+    /* Stage 4 audio notice playful */
+    .audio-notice.playful {
+      font-style: italic;
+    }
+
+    /* Fingerprint joke */
+    .fingerprint-joke {
+      font-size: 12px;
+      color: #2E7D32;
+      text-align: center;
+      margin: 16px 0;
+    }
+
+    /* Grue Ending Styles */
+    .grue-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 10000;
+      display: none;
+      background: #1a1a1a;
+    }
+
+    .grue-overlay.active {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .grue-door-left, .grue-door-right {
+      position: absolute;
+      top: 0;
+      width: 50vw;
+      height: 100vh;
+      background: #3E2723;
+      transition: transform 2s ease-in-out;
+    }
+
+    .grue-door-left {
+      left: 0;
+      transform: translateX(0);
+    }
+
+    .grue-door-right {
+      right: 0;
+      transform: translateX(0);
+    }
+
+    .grue-door-left.open {
+      transform: translateX(-100%);
+    }
+
+    .grue-door-right.open {
+      transform: translateX(100%);
+    }
+
+    .grue-eyes-container {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      display: flex;
+      gap: 20px;
+      z-index: 10;
+    }
+
+    .grue-eye {
+      width: 6px;
+      height: 6px;
+      background: #FFD600;
+      border-radius: 50%;
+      box-shadow: 0 0 10px #FFD600, 0 0 20px #FFD600;
+      animation: eye-pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes eye-pulse {
+      0%, 100% { opacity: 0.6; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.2); }
+    }
+
+    .grue-iris-mask {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: #000;
+      z-index: 100;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 1s ease;
+    }
+
+    .grue-iris-mask.closing {
+      animation: iris-close 3s ease-in forwards;
+    }
+
+    @keyframes iris-close {
+      0% {
+        clip-path: ellipse(150% 150% at 50% 50%);
+        opacity: 0;
+      }
+      100% {
+        clip-path: ellipse(0% 0% at 50% 50%);
+        opacity: 1;
+      }
+    }
+
+    .grue-crunch-phase {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: #000;
+      z-index: 200;
+      display: none;
+    }
+
+    .grue-crunch-phase.active {
+      display: block;
+    }
+
+    .grue-reveal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: #000;
+      z-index: 300;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .grue-reveal.active {
+      display: flex;
+    }
+
+    .grue-text-line {
+      font-family: monospace;
+      font-size: 14px;
+      color: #ccc;
+      opacity: 0;
+      transition: opacity 0.8s ease;
+      text-align: center;
+    }
+
+    .grue-text-line.visible {
+      opacity: 1;
+    }
+
+    .grue-survive-btn {
+      margin-top: 24px;
+      padding: 10px 24px;
+      background: #1E88E5;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity 0.8s ease, background 0.2s;
+    }
+
+    .grue-survive-btn.visible {
+      opacity: 1;
+    }
+
+    .grue-survive-btn:hover {
+      background: #42A5F5;
+    }
+
+    .grue-survive-response {
+      font-family: monospace;
+      font-size: 12px;
+      color: #666;
+      opacity: 0;
+      transition: opacity 0.5s ease;
+      margin-top: 12px;
+    }
+
+    .grue-survive-response.visible {
+      opacity: 1;
+    }
+
+    .grue-survive-response.fading {
+      opacity: 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="captcha-container" id="captchaContainer" title="You've been staring at this for 0 seconds now">
+    <div class="header">
+      <h1>Quick Human Verification</h1>
+      <span class="timer" id="timer" title="Time you'll never get back 😅">Time: 0:00</span>
+    </div>
+    <p class="subtitle">Please complete this brief check to continue</p>
+
+    <div class="progress-section">
+      <div class="progress-track">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+      <div class="progress-text" id="progressText" title="This is accurate* (*not actually accurate)">0% complete</div>
+      <div class="milestone-msg" id="milestoneMsg"></div>
+      <div class="message-area" id="messageArea"></div>
+    </div>
+
+    <div class="stages-wrapper" id="stagesWrapper" style="position: relative;">
+      <!-- Stage 1 -->
+      <div class="stage" id="stage1">
+        <button class="verify-btn" id="verifyBtn">Verify you are human</button>
+      </div>
+
+      <!-- Stage 2 -->
+      <div class="stage hidden" id="stage2">
+        <p class="stage2-prompt">Click the image that matches this pattern:</p>
+        <canvas class="target-canvas" id="targetCanvas" width="100" height="100"></canvas>
+        <div class="image-grid" id="imageGrid"></div>
+      </div>
+
+      <!-- Stage 3 -->
+      <div class="stage hidden" id="stage3">
+        <p class="stage2-prompt">Type the word shown below:</p>
+        <canvas class="word-canvas" id="wordCanvas" width="280" height="80"></canvas>
+        <input type="text" class="stage3-input" id="wordInput" placeholder="Type here..." autocomplete="off" autocapitalize="off">
+        <div class="loading-text" id="stage3Loading"></div>
+        <button class="submit-btn" id="wordSubmit">Submit</button>
+      </div>
+
+      <!-- Stage 4 -->
+      <div class="stage hidden" id="stage4">
+        <div class="mic-warning-note" style="background: #FFF3E0; border-left: 4px solid #FF9800; padding: 8px 12px; border-radius: 4px; margin-bottom: 12px; font-size: 11px; color: #E65100;">
+          ⚠️ This step requires microphone access. Make sure you haven't blocked mic permissions in your browser settings.
+        </div>
+        <div class="audio-notice playful">
+          🔊 Audio required! This is the part where we whisper secrets to you. Please turn your speakers up. 🤫
+        </div>
+        <div id="stage4Ready">
+          <button class="submit-btn" id="audioReadyBtn">I'm ready! 🎤</button>
+        </div>
+        <div id="stage4MicPrompt" class="hidden">
+          <p class="audio-prompt" style="font-weight: 600; color: #E65100;">One sec — we need your mic 🎤</p>
+          <p style="font-size: 13px; color: #666; text-align: center; margin-bottom: 16px;">
+            This browser will ask for microphone permission. Please click 'Allow' so we can hear you. We promise not to record your shower singing.
+          </p>
+          <button class="submit-btn" id="enableMicBtn">🎤 Enable Microphone</button>
+          <div id="micStatusText" style="font-size: 13px; text-align: center; margin-top: 12px; min-height: 20px;"></div>
+        </div>
+        <div id="stage4Challenge" class="hidden">
+          <p class="audio-prompt">Listen to the word and say it back clearly</p>
+          <div class="audio-buttons">
+            <button class="audio-btn" id="speakBtn" title="Play word">🔊</button>
+            <button class="audio-btn" id="micBtn" title="Record voice">🎤</button>
+          </div>
+          <div class="word-hint" id="wordHint"></div>
+          <p class="listening-text hidden" id="listeningText">Listening...</p>
+        </div>
+      </div>
+
+      <!-- Stage 5 -->
+      <div class="stage hidden" id="stage5">
+        <p class="stage2-prompt">Click the dots in the order shown:</p>
+        <div class="sequence-display" id="sequenceDisplay"></div>
+        <div class="dot-area" id="dotArea"></div>
+        <p class="sequence-hint">Select in the correct order</p>
+      </div>
+
+      <!-- Stage 5.5: Fake checkbox -->
+      <div class="stage hidden" id="stage5_5">
+        <div class="fake-checkbox-container" id="fakeCheckboxContainer">
+          <div class="fake-checkbox" id="fakeCheckbox"></div>
+          <span class="fake-checkbox-label">I'm not a robot</span>
+        </div>
+      </div>
+
+      <!-- Stage 6 -->
+      <div class="stage hidden" id="stage6">
+        <p class="code-header">Final Step — Almost Complete!</p>
+        <p class="code-prompt">Enter the 4-digit security code shown below:</p>
+        <canvas class="code-canvas" id="codeCanvas" width="240" height="80"></canvas>
+        <input type="text" class="code-input" id="codeInput" maxlength="4" placeholder="____" autocomplete="off">
+        <button class="submit-btn" id="codeSubmit">Submit</button>
+        <div class="fingerprint-joke hidden" id="fingerprintJoke"></div>
+      </div>
+
+      <!-- Stage 6 countdown -->
+      <div class="stage hidden" id="stage6countdown">
+        <p class="countdown-text" id="countdownText">⚠️ Hold on... is your session about to expire?</p>
+      </div>
+
+      <!-- Success -->
+      <div class="stage hidden" id="successStage">
+        <div class="success-screen">
+          <div class="success-check">✓</div>
+          <p class="success-title big" id="successTitle">🎉 YOU DID IT! 🎉</p>
+          <p class="success-subtitle fun" id="successSubtitle">You are officially verified as human. We always believed in you. (That's a lie, but it sounds nice.)</p>
+          <p class="success-stats" id="successStats"></p>
+          <button class="continue-btn" id="continueBtn">Continue</button>
+        </div>
+        <div class="confetti-container" id="confettiContainer"></div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <a href="#" id="whatIsThis">What is this?</a>
+      <div class="what-tooltip" id="whatTooltip"></div>
+    </div>
+    <div class="shield-text" title="Not a real product. Not even a little.">🔒 Protected by VerifyShield™</div>
+    <div class="skip-link" id="skipLink">or just skip this step</div>
+  </div>
+
+  <!-- Grue Ending Overlay -->
+  <div class="grue-overlay" id="grueOverlay">
+    <div class="grue-door-left" id="grueDoorLeft"></div>
+    <div class="grue-door-right" id="grueDoorRight"></div>
+    <div class="grue-eyes-container" id="grueEyes">
+      <div class="grue-eye"></div>
+      <div class="grue-eye"></div>
+    </div>
+    <div class="grue-iris-mask" id="grueIrisMask"></div>
+  </div>
+  <div class="grue-crunch-phase" id="grueCrunchPhase"></div>
+  <div class="grue-reveal" id="grueReveal">
+    <div class="grue-text-line" id="grueLine1">🔒 Verification failed.</div>
+    <div class="grue-text-line" id="grueLine2">You have been consumed by the Grue.</div>
+    <div class="grue-text-line" id="grueLine3">This message will self-destruct.</div>
+    <div class="grue-text-line" style="height: 16px;"></div>
+    <div class="grue-text-line" id="grueLine4">(Just kidding. You were verified 30 seconds ago.)</div>
+    <div class="grue-text-line" id="grueLine5">(You can close this tab now.)</div>
+    <div class="grue-text-line" id="grueLine6">(Or don't. We're not your boss.)</div>
+    <button class="grue-survive-btn" id="grueSurviveBtn">I survived</button>
+    <div class="grue-survive-response" id="grueSurviveResponse">Barely. 🎮</div>
+  </div>
+
+  <script>
+    // ============================================
+    // THE WORST CAPTCHA EVER
+    // ============================================
+
+    const WORDS = ['trust', 'verify', 'shield', 'guard', 'human', 'proof', 'check', 'agent', 'prove', 'valid', 'speak', 'codes', 'click', 'watch', 'image', 'color', 'shape', 'sound', 'board', 'press'];
+    const COLORS = ['#E53935', '#1E88E5', '#43A047', '#FDD835', '#8E24AA', '#FB8C00'];
+    const SHAPES = ['circle', 'square', 'triangle'];
+
+    const captcha = {
+      stage: 1,
+      progress: 0,
+      startTime: Date.now(),
+      wrongAttempts: 0,
+      targetWord: '',
+      targetCode: '',
+      targetShapes: [],
+      gridShapes: [],
+      correctIndex: 0,
+      dotSequence: [],
+      userSequence: [],
+      correctDotOrder: [],
+      shuffledPositions: [],
+      codeRegroupCount: 0,
+      stage6Wrong: 0
+    };
+
+    // Elements
+    const progressFill = document.getElementById('progressFill');
+    const progressText = document.getElementById('progressText');
+    const messageArea = document.getElementById('messageArea');
+    const timerEl = document.getElementById('timer');
+    const captchaContainer = document.getElementById('captchaContainer');
+
+    // Timer
+    function startTimer() {
+      setInterval(() => {
+        const elapsed = Math.floor((Date.now() - captcha.startTime) / 1000);
+        const min = Math.floor(elapsed / 60);
+        const sec = elapsed % 60;
+        timerEl.textContent = `Time: ${min}:${sec.toString().padStart(2, '0')}`;
+      }, 1000);
+    }
+
+    function setProgress(pct) {
+      // Progress NEVER goes backward, only forward
+      const newPct = Math.max(captcha.progress, Math.min(pct, 100));
+      captcha.progress = newPct;
+      progressFill.style.width = captcha.progress + '%';
+      progressText.textContent = Math.round(captcha.progress) + '% complete';
+      progressFill.classList.add('pulse');
+      setTimeout(() => progressFill.classList.remove('pulse'), 500);
+      checkMilestone(captcha.progress);
+    }
+
+    function showMessage(text, color = 'green') {
+      messageArea.textContent = text;
+      messageArea.className = 'message-area';
+      if (color === 'blue') messageArea.classList.add('blue');
+      if (color === 'red') messageArea.classList.add('red');
+    }
+
+    function clearMessage() {
+      messageArea.textContent = '';
+      messageArea.className = 'message-area';
+    }
+
+    function advanceToStage(n) {
+      const current = document.querySelector('.stage:not(.hidden)');
+      if (current) current.classList.add('hidden');
+      const next = document.getElementById('stage' + n);
+      if (next) {
+        next.classList.remove('hidden');
+        next.style.opacity = '0';
+        setTimeout(() => { next.style.opacity = '1'; }, 50);
+      }
+      captcha.stage = n;
+      captcha.wrongAttempts = 0;
+      clearMessage();
+    }
+
+    // ============================================
+    // PLAYFUL ELEMENTS: Arrays & State
+    // ============================================
+
+    const stage2WrongMsgs = [
+      "Almost! That image looked at you funny though. Try another one.",
+      "Close! But that's not it. Don't worry, images are tricky.",
+      "Not quite! The matching one is playing hide-and-seek. Sneaky, right?",
+      "So close! Fun fact: even robots get this one wrong sometimes. Wait..."
+    ];
+
+    const stage3WrongMsgs = [
+      "Hmm, autocorrect didn't save you there. Try again!",
+      "Close! Were you typing with your eyes closed? We won't judge.",
+      "So near! The word might have moved. It does that. We should fix that.",
+      "Almost! For what it's worth, your typing speed was impressive."
+    ];
+
+    const stage4WrongMsgs = [
+      "We heard something! Not the right word, but we appreciated the effort.",
+      "Almost there! Say it like you mean it — with conviction!",
+      "Close! Maybe try a different accent? We're flexible here."
+    ];
+
+    const stage5WrongMsgs = [
+      "Ooh, the dots moved! That's not fair is it? Blame physics.",
+      "Almost! Those dots are surprisingly slippery today.",
+      "So close! The dots have a mind of their own, honestly."
+    ];
+
+    const stage6WrongMsgs = [
+      "The code changed! That's... part of the experience. We promise.",
+      "Not quite! The numbers are having a dance party. They'll settle down.",
+      "Almost! Security is no joke. Well, maybe a little joke."
+    ];
+
+    const whatIsThisMessages = [
+      "Just a quick human verification! 😊",
+      "Okay, it might take a few tries. 😅",
+      "We appreciate your patience. Seriously. We're 90% sure this works.",
+      "Look, someone's getting a raise for this. It's not us.",
+      "If you're still clicking this, you're clearly human. Or a very persistent robot."
+    ];
+
+    const whatIsThisExtra = [
+      "You win. You're human. We checked. Twice.",
+      "Okay we get it, you're a human. Stop clicking.",
+      "This isn't going to become a game. ...okay maybe it is.",
+      "Achievement unlocked: Persistent Clicker 🏆"
+    ];
+
+    const containerAnimations = ['wiggle', 'bounce-anim'];
+    let whatClickCount = 0;
+    let skipClickCount = 0;
+    let konamiProgress = 0;
+    const konamiSequence = ['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight','KeyB','KeyA'];
+    let toastTimeout = null;
+    let lastMilestone = 0;
+    let continueClickCount = 0;
+
+    // ============================================
+    // PLAYFUL ELEMENTS: Toast system
+    // ============================================
+
+    function showToast(message, duration = 3000, bounce = false) {
+      let toast = document.getElementById('playfulToast');
+      if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'playfulToast';
+        toast.className = 'toast';
+        document.body.appendChild(toast);
+      }
+      toast.textContent = message;
+      toast.classList.remove('show', 'bounce-in');
+      void toast.offsetWidth;
+      toast.classList.add('show');
+      if (bounce) toast.classList.add('bounce-in');
+
+      if (toastTimeout) clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toast.classList.remove('show');
+      }, duration);
+    }
+
+    // ============================================
+    // PLAYFUL ELEMENTS: Dynamic container title
+    // ============================================
+
+    function startContainerTitleTimer() {
+      setInterval(() => {
+        const elapsed = Math.floor((Date.now() - captcha.startTime) / 1000);
+        captchaContainer.title = `You've been staring at this for ${elapsed} seconds now`;
+      }, 10000);
+    }
+
+    // ============================================
+    // PLAYFUL ELEMENTS: What is this? easter egg
+    // ============================================
+
+    document.getElementById('whatIsThis').addEventListener('click', (e) => {
+      e.preventDefault();
+      const tooltip = document.getElementById('whatTooltip');
+      let msg;
+      if (whatClickCount < whatIsThisMessages.length) {
+        msg = whatIsThisMessages[whatClickCount];
+      } else {
+        msg = whatIsThisExtra[(whatClickCount - whatIsThisMessages.length) % whatIsThisExtra.length];
+      }
+      tooltip.textContent = msg;
+      tooltip.classList.add('visible');
+      setTimeout(() => tooltip.classList.remove('visible'), 3000);
+
+      // Fun animation on container
+      const animClass = containerAnimations[whatClickCount % containerAnimations.length];
+      captchaContainer.classList.add(animClass);
+      setTimeout(() => captchaContainer.classList.remove(animClass), 400);
+
+      whatClickCount++;
+    });
+
+    // ============================================
+    // PLAYFUL ELEMENTS: Hidden skip button
+    // ============================================
+
+    document.getElementById('skipLink').addEventListener('click', () => {
+      if (skipClickCount === 0) {
+        showToast("Nice try! 😄 There is no skip. Only verification.", 3000, true);
+        document.getElementById('skipLink').textContent = "Still trying? We admire the creativity.";
+      } else {
+        showToast("We admire your persistence! But no. 😄", 2000, true);
+      }
+      skipClickCount++;
+    });
+
+    // ============================================
+    // PLAYFUL ELEMENTS: Double-click easter egg
+    // ============================================
+
+    document.getElementById('stagesWrapper').addEventListener('dblclick', (e) => {
+      if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT' || e.target.tagName === 'CANVAS' || e.target.closest('button') || e.target.closest('input')) return;
+      showToast("Double-clicking won't help, but we appreciate the enthusiasm! 😊", 2000);
+    });
+
+    // ============================================
+    // PLAYFUL ELEMENTS: Konami Code listener
+    // ============================================
+
+    document.addEventListener('keydown', (e) => {
+      // Don't interfere with input fields
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+      if (e.code === konamiSequence[konamiProgress]) {
+        konamiProgress++;
+        if (konamiProgress === konamiSequence.length) {
+          showToast("The Konami Code works! But it doesn't unlock anything. We just wanted to see if you'd try. 🎮", 4000);
+          konamiProgress = 0;
+        }
+      } else {
+        konamiProgress = 0;
+        // Check if this key is the start of a new sequence
+        if (e.code === konamiSequence[0]) konamiProgress = 1;
+      }
+    });
+
+    // ============================================
+    // PLAYFUL ELEMENTS: Progress milestone messages
+    // ============================================
+
+    function checkMilestone(pct) {
+      const milestones = [
+        { at: 40, msg: "🚀 Good start!" },
+        { at: 60, msg: "📈 We're getting somewhere!" },
+        { at: 75, msg: "💪 Over halfway!" },
+        { at: 90, msg: "🏁 Almost there!" },
+        { at: 99, msg: "⏳ Just a few more moments..." },
+        { at: 100, msg: "🎊 FINALLY!" }
+      ];
+
+      const milestoneEl = document.getElementById('milestoneMsg');
+      for (const m of milestones) {
+        if (pct >= m.at && lastMilestone < m.at) {
+          lastMilestone = m.at;
+          milestoneEl.textContent = m.msg;
+          milestoneEl.classList.add('visible');
+          setTimeout(() => milestoneEl.classList.remove('visible'), 1500);
+          break;
+        }
+      }
+    }
+
+    // ============================================
+    // PLAYFUL ELEMENTS: Stage 2 whoosh sound
+    // ============================================
+
+    function playWhoosh() {
+      try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(800, audioCtx.currentTime);
+        oscillator.frequency.exponentialRampToValueAtTime(400, audioCtx.currentTime + 0.05);
+
+        gainNode.gain.setValueAtTime(0.15, audioCtx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
+
+        oscillator.start(audioCtx.currentTime);
+        oscillator.stop(audioCtx.currentTime + 0.05);
+      } catch(e) { /* silent fail */ }
+    }
+
+    // ============================================
+    // PLAYFUL ELEMENTS: Stage 4 button hover
+    // ============================================
+
+    function initStage4ReadyBtn() {
+      const btn = document.getElementById('audioReadyBtn');
+      btn.addEventListener('mouseenter', () => {
+        btn.textContent = "I'm not ready... just kidding, I am! 🎤";
+      });
+      btn.addEventListener('mouseleave', () => {
+        btn.textContent = "I'm ready! 🎤";
+      });
+    }
+
+    // ============================================
+    // SHAPE DRAWING UTILITIES
+    // ============================================
+
+    function drawShape(ctx, shape, color, x, y, size) {
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      if (shape === 'circle') {
+        ctx.arc(x, y, size / 2, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (shape === 'square') {
+        ctx.fillRect(x - size / 2, y - size / 2, size, size);
+      } else if (shape === 'triangle') {
+        ctx.moveTo(x, y - size / 2);
+        ctx.lineTo(x + size / 2, y + size / 2);
+        ctx.lineTo(x - size / 2, y + size / 2);
+        ctx.closePath();
+        ctx.fill();
+      }
+    }
+
+    function generateShapes() {
+      const shapes = [];
+      for (let i = 0; i < 3; i++) {
+        shapes.push({
+          type: SHAPES[Math.floor(Math.random() * SHAPES.length)],
+          color: COLORS[Math.floor(Math.random() * COLORS.length)],
+          x: 20 + Math.random() * 60,
+          y: 20 + Math.random() * 60,
+          size: 15 + Math.random() * 15
+        });
+      }
+      return shapes;
+    }
+
+    function drawShapes(ctx, shapes) {
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, 100, 100);
+      shapes.forEach(s => drawShape(ctx, s.type, s.color, s.x, s.y, s.size));
+    }
+
+    function shapesMatch(a, b) {
+      if (a.length !== b.length) return false;
+      const sortedA = [...a].sort((x, y) => x.x - y.x || x.y - y.y);
+      const sortedB = [...b].sort((x, y) => x.x - y.x || x.y - y.y);
+      for (let i = 0; i < sortedA.length; i++) {
+        if (Math.abs(sortedA[i].x - sortedB[i].x) > 5 ||
+            Math.abs(sortedA[i].y - sortedB[i].y) > 5 ||
+            sortedA[i].type !== sortedB[i].type ||
+            sortedA[i].color !== sortedB[i].color) {
+          return false;
+        }
+      }
+      return true;
+    }
+
+    // ============================================
+    // STAGE 1: Click the Button
+    // ============================================
+
+    function initStage1() {
+      const btn = document.getElementById('verifyBtn');
+      btn.addEventListener('click', () => {
+        btn.disabled = true;
+        btn.innerHTML = '<div class="spinner"></div>';
+        btn.style.padding = '12px 40px';
+
+        setTimeout(() => {
+          // Celebration: bounce button and change text
+          btn.innerHTML = '🎉 Let\'s go!';
+          btn.classList.add('celebrate-bounce');
+          btn.style.padding = '12px 32px';
+          setTimeout(() => btn.classList.remove('celebrate-bounce'), 900);
+
+          setProgress(40);
+          showMessage('Great! Moving to next step...');
+          setTimeout(() => {
+            advanceToStage(2);
+            initStage2();
+          }, 800);
+        }, 1500);
+      });
+    }
+
+    // ============================================
+    // STAGE 2: Select the matching image
+    // ============================================
+
+    let shuffleInterval = null;
+
+    function initStage2() {
+      captcha.wrongAttempts = 0;
+
+      // Generate target
+      captcha.targetShapes = generateShapes();
+      const targetCanvas = document.getElementById('targetCanvas');
+      drawShapes(targetCanvas.getContext('2d'), captcha.targetShapes);
+
+      // Generate grid
+      const grid = document.getElementById('imageGrid');
+      grid.innerHTML = '';
+      captcha.gridShapes = [];
+
+      // Create 6 images, one matches
+      const matchIndex = Math.floor(Math.random() * 6);
+      captcha.correctIndex = matchIndex;
+
+      for (let i = 0; i < 6; i++) {
+        const canvas = document.createElement('canvas');
+        canvas.width = 100;
+        canvas.height = 100;
+        canvas.className = 'grid-image';
+        canvas.dataset.index = i;
+
+        if (i === matchIndex) {
+          captcha.gridShapes[i] = JSON.parse(JSON.stringify(captcha.targetShapes));
+        } else {
+          captcha.gridShapes[i] = generateShapes();
+        }
+
+        drawShapes(canvas.getContext('2d'), captcha.gridShapes[i]);
+
+        canvas.addEventListener('click', () => handleImageClick(i, canvas));
+        grid.appendChild(canvas);
+      }
+
+      // Shuffle correct image position every 2500ms
+      let currentCorrect = matchIndex;
+      shuffleInterval = setInterval(() => {
+        const images = grid.querySelectorAll('.grid-image');
+        const options = [0, 1, 2, 3, 4, 5].filter(i => i !== currentCorrect);
+        const swapWith = options[Math.floor(Math.random() * options.length)];
+
+        // Swap positions via CSS transform
+        const correctEl = images[currentCorrect];
+        const swapEl = images[swapWith];
+
+        if (correctEl && swapEl) {
+          const rect1 = correctEl.getBoundingClientRect();
+          const rect2 = swapEl.getBoundingClientRect();
+          const dx = rect2.left - rect1.left;
+          const dy = rect2.top - rect1.top;
+
+          correctEl.style.transform = `translate(${dx}px, ${dy}px)`;
+          swapEl.style.transform = `translate(${-dx}px, ${-dy}px)`;
+
+          // Play whoosh sound on shuffle
+          playWhoosh();
+
+          // Actually swap after animation
+          setTimeout(() => {
+            correctEl.style.transform = '';
+            swapEl.style.transform = '';
+
+            // Swap in DOM
+            const parent = correctEl.parentNode;
+            const next1 = correctEl.nextSibling === swapEl ? correctEl : correctEl.nextSibling;
+            parent.insertBefore(swapEl, correctEl);
+            parent.insertBefore(correctEl, next1);
+
+            // Update indices
+            const newImages = grid.querySelectorAll('.grid-image');
+            newImages.forEach((el, idx) => el.dataset.index = idx);
+
+            currentCorrect = Array.from(newImages).indexOf(correctEl);
+            captcha.correctIndex = currentCorrect;
+          }, 300);
+        }
+      }, 2500);
+    }
+
+    function handleImageClick(index, canvas) {
+      if (captcha.stage !== 2) return;
+
+      const images = document.querySelectorAll('.grid-image');
+      let correctIndex = parseInt(images[captcha.correctIndex]?.dataset.index ?? captcha.correctIndex);
+
+      if (index === correctIndex || captcha.wrongAttempts >= 3) {
+        // Correct!
+        clearInterval(shuffleInterval);
+        canvas.classList.add('correct');
+        // Celebration: spin the correct image
+        canvas.classList.add('celebrate-spin');
+        setTimeout(() => canvas.classList.remove('celebrate-spin'), 600);
+
+        showMessage(captcha.wrongAttempts >= 3 ? "🎉 Image verified! You've got great eyes." : "🎉 Image verified! You've got great eyes.");
+        setProgress(60);
+
+        setTimeout(() => {
+          advanceToStage(3);
+          initStage3();
+        }, 1000);
+      } else {
+        // Wrong
+        captcha.wrongAttempts++;
+        canvas.classList.add('wrong');
+        setTimeout(() => canvas.classList.remove('wrong'), 300);
+        const msg = stage2WrongMsgs[(captcha.wrongAttempts - 1) % stage2WrongMsgs.length];
+        showMessage(msg, 'blue');
+        setProgress(Math.min(60, 40 + captcha.wrongAttempts * 4));
+      }
+    }
+
+    // ============================================
+    // STAGE 3: Type what you see
+    // ============================================
+
+    let cursorJumpInterval = null;
+    let marginShiftInterval = null;
+
+    function initStage3() {
+      captcha.wrongAttempts = 0;
+      captcha.targetWord = WORDS[Math.floor(Math.random() * WORDS.length)];
+      renderWord();
+
+      const input = document.getElementById('wordInput');
+      input.value = '';
+      input.focus();
+
+      // Input shifting trap
+      marginShiftInterval = setInterval(() => {
+        if (document.activeElement === input) {
+          const shift = Math.floor(Math.random() * 31) - 15;
+          input.style.marginLeft = shift + 'px';
+        }
+      }, 2000);
+
+      // Cursor jumping trap
+      cursorJumpInterval = setInterval(() => {
+        if (document.activeElement === input && input.value.length > 0) {
+          const pos = Math.floor(Math.random() * input.value.length);
+          input.setSelectionRange(pos, pos);
+        }
+      }, 1500);
+
+      document.getElementById('wordSubmit').addEventListener('click', handleWordSubmit);
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') handleWordSubmit();
+      });
+    }
+
+    function renderWord() {
+      const canvas = document.getElementById('wordCanvas');
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, 280, 80);
+      ctx.fillStyle = '#f9f9f9';
+      ctx.fillRect(0, 0, 280, 80);
+
+      // Random distortion
+      const rotation = (Math.random() - 0.5) * 0.17;
+      const fontSize = 28 + Math.floor(Math.random() * 9);
+
+      ctx.save();
+      ctx.translate(140, 45);
+      ctx.rotate(rotation);
+      ctx.font = `bold ${fontSize}px system-ui, -apple-system, sans-serif`;
+      ctx.fillStyle = '#333';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(captcha.targetWord, 0, 0);
+      ctx.restore();
+
+      // Noise lines
+      for (let i = 0; i < 3; i++) {
+        ctx.beginPath();
+        ctx.strokeStyle = `rgba(150, 150, 150, 0.3)`;
+        ctx.lineWidth = 1;
+        const y1 = Math.random() * 80;
+        const y2 = Math.random() * 80;
+        ctx.moveTo(0, y1);
+        ctx.lineTo(280, y2);
+        ctx.stroke();
+      }
+    }
+
+    function handleWordSubmit() {
+      if (captcha.stage !== 3) return;
+
+      const input = document.getElementById('wordInput');
+      const typed = input.value.trim().toLowerCase();
+      const loadingEl = document.getElementById('stage3Loading');
+
+      // Show fake loading text before re-rendering
+      loadingEl.textContent = 'Enhancing... (not really)';
+      input.disabled = true;
+      document.getElementById('wordSubmit').disabled = true;
+
+      setTimeout(() => {
+        loadingEl.textContent = '';
+        // Re-render with new distortion (the doubt trap)
+        renderWord();
+
+        if (typed === captcha.targetWord.toLowerCase() || captcha.wrongAttempts >= 2) {
+          clearInterval(cursorJumpInterval);
+          clearInterval(marginShiftInterval);
+
+          // Celebration: shake the input
+          input.classList.add('celebrate-shake');
+          setTimeout(() => input.classList.remove('celebrate-shake'), 400);
+
+          showMessage(captcha.wrongAttempts >= 2 ? "✍️ Typing champion! Words are your thing." : "✍️ Typing champion! Words are your thing.");
+          setProgress(72);
+
+          setTimeout(() => {
+            advanceToStage(4);
+            initStage4();
+          }, 800);
+        } else {
+          captcha.wrongAttempts++;
+          const msg = stage3WrongMsgs[(captcha.wrongAttempts - 1) % stage3WrongMsgs.length];
+          showMessage(msg, 'blue');
+          setProgress(Math.min(72, 60 + captcha.wrongAttempts * 4));
+          renderWord();
+          input.value = '';
+          input.disabled = false;
+          document.getElementById('wordSubmit').disabled = false;
+          input.focus();
+        }
+      }, 500);
+    }
+
+    // ============================================
+    // STAGE 4: Voice Verification
+    // ============================================
+
+    function initStage4() {
+      captcha.wrongAttempts = 0;
+      captcha.targetWord = WORDS[Math.floor(Math.random() * WORDS.length)];
+
+      // Check for SpeechRecognition support
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        // Skip stage if not available
+        showMessage("Voice verification unavailable in this browser. Skipping this step for you. Lucky day!");
+        setProgress(88);
+        setTimeout(() => {
+          advanceToStage(5);
+          initStage5();
+        }, 1500);
+        return;
+      }
+
+      document.getElementById('wordHint').textContent = captcha.targetWord;
+
+      // Initialize button hover behavior
+      initStage4ReadyBtn();
+
+      document.getElementById('audioReadyBtn').addEventListener('click', () => {
+        const btn = document.getElementById('audioReadyBtn');
+        btn.textContent = 'Brave soul! Here we go...';
+        btn.disabled = true;
+        setTimeout(() => {
+          document.getElementById('stage4Ready').classList.add('hidden');
+          document.getElementById('stage4MicPrompt').classList.remove('hidden');
+          initMicPermissionPrompt();
+        }, 1000);
+      });
+    }
+
+    function initMicPermissionPrompt() {
+      const enableMicBtn = document.getElementById('enableMicBtn');
+      const statusText = document.getElementById('micStatusText');
+
+      // Check if getUserMedia is available
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        statusText.textContent = "Mic access denied! No worries — we'll skip voice verification. Lucky day! 🍀";
+        statusText.style.color = '#2E7D32';
+        setTimeout(() => {
+          advanceToStage(5);
+          initStage5();
+        }, 1000);
+        return;
+      }
+
+      enableMicBtn.addEventListener('click', async () => {
+        enableMicBtn.disabled = true;
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          // Success - stop the stream immediately, we just needed permission
+          stream.getTracks().forEach(track => track.stop());
+          statusText.textContent = "Mic is on! 🎙️ Starting voice challenge...";
+          statusText.style.color = '#2E7D32';
+          setTimeout(() => {
+            document.getElementById('stage4MicPrompt').classList.add('hidden');
+            document.getElementById('stage4Challenge').classList.remove('hidden');
+            initVoiceChallenge();
+          }, 1000);
+        } catch (err) {
+          // Permission denied or other error
+          statusText.textContent = "Mic access denied! No worries — we'll skip voice verification. Lucky day! 🍀";
+          statusText.style.color = '#2E7D32';
+          setTimeout(() => {
+            advanceToStage(5);
+            initStage5();
+          }, 1000);
+        }
+      });
+    }
+
+    function initVoiceChallenge() {
+      const speakBtn = document.getElementById('speakBtn');
+      const micBtn = document.getElementById('micBtn');
+      const listeningText = document.getElementById('listeningText');
+
+      speakBtn.addEventListener('click', () => {
+        if ('speechSynthesis' in window) {
+          const utterance = new SpeechSynthesisUtterance(captcha.targetWord);
+          utterance.rate = 2.5;
+          utterance.volume = 0.3;
+          utterance.pitch = 0.8;
+          speechSynthesis.speak(utterance);
+        }
+      });
+
+      micBtn.addEventListener('click', () => {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const recognition = new SpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        recognition.lang = 'en-US';
+
+        micBtn.classList.add('recording');
+        listeningText.classList.remove('hidden');
+
+        recognition.onresult = (event) => {
+          const result = event.results[0][0].transcript.trim().toLowerCase();
+          micBtn.classList.remove('recording');
+          listeningText.classList.add('hidden');
+
+          if (result === captcha.targetWord.toLowerCase() || captcha.wrongAttempts >= 2) {
+            // Celebration: pulse the mic button
+            micBtn.classList.add('celebrate-pulse');
+            setTimeout(() => micBtn.classList.remove('celebrate-pulse'), 900);
+
+            showMessage(captcha.wrongAttempts >= 2 ? "🎤 Voice confirmed! Your vocal cords pass the test." : "🎤 Voice confirmed! Your vocal cords pass the test.");
+            setProgress(88);
+            setTimeout(() => {
+              advanceToStage(5);
+              initStage5();
+            }, 1000);
+          } else {
+            captcha.wrongAttempts++;
+            const msg = stage4WrongMsgs[(captcha.wrongAttempts - 1) % stage4WrongMsgs.length];
+            showMessage(msg, 'blue');
+            setProgress(Math.min(88, 82 + captcha.wrongAttempts * 3));
+          }
+        };
+
+        recognition.onerror = () => {
+          micBtn.classList.remove('recording');
+          listeningText.classList.add('hidden');
+          const msg = stage4WrongMsgs[captcha.wrongAttempts % stage4WrongMsgs.length];
+          showMessage(msg, 'blue');
+          captcha.wrongAttempts++;
+          setProgress(Math.min(88, 82 + captcha.wrongAttempts * 3));
+        };
+
+        recognition.onend = () => {
+          if (micBtn.classList.contains('recording')) {
+            micBtn.classList.remove('recording');
+            listeningText.classList.add('hidden');
+          }
+        };
+
+        recognition.start();
+
+        // Auto-stop after 3 seconds
+        setTimeout(() => {
+          try { recognition.stop(); } catch(e) {}
+        }, 3000);
+      });
+    }
+
+    // ============================================
+    // STAGE 5: Security Pattern
+    // ============================================
+
+    function initStage5() {
+      captcha.wrongAttempts = 0;
+      captcha.userSequence = [];
+
+      const dotColors = ['#E53935', '#1E88E5', '#43A047', '#FDD835'];
+      const dotLabels = ['1', '2', '3', '4'];
+
+      // Generate correct order (random permutation)
+      captcha.correctDotOrder = [0, 1, 2, 3].sort(() => Math.random() - 0.5);
+
+      // Show sequence hint
+      const seqDisplay = document.getElementById('sequenceDisplay');
+      seqDisplay.innerHTML = '';
+      captcha.correctDotOrder.forEach((dotIdx, seqIdx) => {
+        const dot = document.createElement('span');
+        dot.className = 'seq-dot';
+        dot.style.background = dotColors[dotIdx];
+        dot.textContent = seqIdx + 1;
+        seqDisplay.appendChild(dot);
+      });
+
+      // Create dots in circular arrangement
+      createDots(dotColors);
+
+      // Shuffle dot positions every 3 seconds
+      setInterval(() => {
+        if (captcha.stage !== 5) return;
+        shuffleDots(dotColors);
+      }, 3000);
+    }
+
+    function createDots(colors) {
+      const dotArea = document.getElementById('dotArea');
+      dotArea.innerHTML = '';
+
+      const centerX = 82;
+      const centerY = 82;
+      const radius = 50;
+
+      // Initial positions at 0, 90, 180, 270 degrees
+      const angles = [0, 90, 180, 270];
+
+      captcha.shuffledPositions = angles.map((angle, i) => {
+        const rad = (angle * Math.PI) / 180;
+        return {
+          x: centerX + radius * Math.cos(rad),
+          y: centerY + radius * Math.sin(rad),
+          dotIndex: i
+        };
+      });
+
+      // Shuffle positions
+      captcha.shuffledPositions.sort(() => Math.random() - 0.5);
+
+      captcha.shuffledPositions.forEach((pos, i) => {
+        const dot = document.createElement('div');
+        dot.className = 'clickable-dot';
+        dot.style.background = colors[pos.dotIndex];
+        dot.style.left = pos.x + 'px';
+        dot.style.top = pos.y + 'px';
+        dot.dataset.dotIndex = pos.dotIndex;
+        dot.textContent = pos.dotIndex + 1;
+
+        dot.addEventListener('click', () => handleDotClick(parseInt(dot.dataset.dotIndex), dot));
+        dotArea.appendChild(dot);
+      });
+    }
+
+    function shuffleDots(colors) {
+      const dotArea = document.getElementById('dotArea');
+      const dots = Array.from(dotArea.querySelectorAll('.clickable-dot'));
+
+      const centerX = 82;
+      const centerY = 82;
+      const radius = 50;
+
+      // Generate new random positions
+      const newAngles = [0, 90, 180, 270].sort(() => Math.random() - 0.5);
+
+      dots.forEach((dot, i) => {
+        const angle = newAngles[i];
+        const rad = (angle * Math.PI) / 180;
+        const x = centerX + radius * Math.cos(rad);
+        const y = centerY + radius * Math.sin(rad);
+
+        dot.style.left = x + 'px';
+        dot.style.top = y + 'px';
+      });
+
+      // Also randomize the correct order to match new positions
+      captcha.correctDotOrder = [0, 1, 2, 3].sort(() => Math.random() - 0.5);
+
+      // Update sequence display
+      const seqDisplay = document.getElementById('sequenceDisplay');
+      seqDisplay.innerHTML = '';
+      captcha.correctDotOrder.forEach((dotIdx, seqIdx) => {
+        const seqDot = document.createElement('span');
+        seqDot.className = 'seq-dot';
+        seqDot.style.background = colors[dotIdx];
+        seqDot.textContent = seqIdx + 1;
+        seqDisplay.appendChild(seqDot);
+      });
+    }
+
+    function handleDotClick(dotIndex, dotEl) {
+      if (captcha.stage !== 5) return;
+
+      dotEl.classList.add('selected');
+      captcha.userSequence.push(dotIndex);
+
+      // Check if sequence is correct so far
+      const seqPos = captcha.userSequence.length - 1;
+      if (captcha.userSequence[seqPos] !== captcha.correctDotOrder[seqPos]) {
+        // Wrong sequence
+        captcha.wrongAttempts++;
+        const msg = stage5WrongMsgs[(captcha.wrongAttempts - 1) % stage5WrongMsgs.length];
+        showMessage(msg, 'blue');
+        setProgress(Math.min(95, 88 + captcha.wrongAttempts * 2));
+        captcha.userSequence = [];
+
+        document.querySelectorAll('.clickable-dot').forEach(d => d.classList.remove('selected'));
+
+        if (captcha.wrongAttempts >= 3) {
+          // Auto-advance with celebration
+          showMessage("🏆 Pattern matched! Sequences are your specialty.");
+          setProgress(95);
+          // Celebration: dots turn gold
+          document.querySelectorAll('.clickable-dot').forEach(d => d.classList.add('dot-sparkle'));
+          setTimeout(() => {
+            document.querySelectorAll('.clickable-dot').forEach(d => d.classList.remove('dot-sparkle'));
+            advanceToStage('5_5');
+            initFakeCheckbox();
+          }, 1200);
+        }
+        return;
+      }
+
+      // Check if complete
+      if (captcha.userSequence.length === 4) {
+        // Celebration: dots turn gold
+        document.querySelectorAll('.clickable-dot').forEach(d => d.classList.add('dot-sparkle'));
+        showMessage("🏆 Pattern matched! Sequences are your specialty.");
+        setProgress(95);
+        setTimeout(() => {
+          document.querySelectorAll('.clickable-dot').forEach(d => d.classList.remove('dot-sparkle'));
+          advanceToStage('5_5');
+          initFakeCheckbox();
+        }, 1200);
+      }
+    }
+
+    // ============================================
+    // STAGE 5.5: Fake Checkbox
+    // ============================================
+
+    function initFakeCheckbox() {
+      const container = document.getElementById('fakeCheckboxContainer');
+      const checkbox = document.getElementById('fakeCheckbox');
+
+      container.onclick = () => {
+        checkbox.innerHTML = '<div class="spinner" style="width:16px;height:16px;border-width:2px;"></div>';
+
+        setTimeout(() => {
+          checkbox.innerHTML = '✓';
+          checkbox.classList.add('checked');
+          setProgress(97);
+
+          setTimeout(() => {
+            advanceToStage(6);
+            initStage6();
+          }, 500);
+        }, 3000);
+      };
+    }
+
+    // ============================================
+    // STAGE 6: Final Code Verification
+    // ============================================
+
+    let codeRegroupInterval = null;
+
+    function initStage6() {
+      captcha.wrongAttempts = 0;
+      captcha.stage6Wrong = 0;
+      captcha.targetCode = String(Math.floor(Math.random() * 10000)).padStart(4, '0');
+
+      renderCode();
+
+      const input = document.getElementById('codeInput');
+      input.value = '';
+      input.focus();
+
+      document.getElementById('codeSubmit').onclick = handleCodeSubmit;
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') handleCodeSubmit();
+      });
+
+      // Code regroups every 4 seconds
+      codeRegroupInterval = setInterval(() => {
+        if (captcha.stage === 6) {
+          renderCode();
+        }
+      }, 4000);
+    }
+
+    function renderCode() {
+      const canvas = document.getElementById('codeCanvas');
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, 240, 80);
+
+      // Background gradient
+      const grad = ctx.createLinearGradient(0, 0, 240, 80);
+      grad.addColorStop(0, '#f5f5f5');
+      grad.addColorStop(1, '#eee');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 240, 80);
+
+      // Noise lines
+      for (let i = 0; i < 6; i++) {
+        ctx.beginPath();
+        ctx.strokeStyle = COLORS[Math.floor(Math.random() * COLORS.length)];
+        ctx.globalAlpha = 0.2;
+        ctx.lineWidth = 2;
+        ctx.moveTo(Math.random() * 240, Math.random() * 80);
+        ctx.lineTo(Math.random() * 240, Math.random() * 80);
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+
+      // Draw digits with random sizes and shadows
+      const chars = captcha.targetCode.split('');
+      const positions = [40, 90, 140, 190];
+
+      // Shuffle positions slightly
+      positions.sort(() => Math.random() - 0.5);
+
+      chars.forEach((char, i) => {
+        const x = positions[i];
+        const y = 45 + (Math.random() - 0.5) * 10;
+        const size = 28 + Math.floor(Math.random() * 10);
+
+        // Shadow for 3D effect
+        ctx.font = `bold ${size}px monospace`;
+        ctx.fillStyle = 'rgba(0,0,0,0.1)';
+        ctx.fillText(char, x + 2, y + 2);
+
+        ctx.fillStyle = '#333';
+        ctx.fillText(char, x, y);
+      });
+    }
+
+    function handleCodeSubmit() {
+      if (captcha.stage !== 6) return;
+
+      const input = document.getElementById('codeInput');
+      const entered = input.value.trim();
+
+      if (entered === captcha.targetCode || captcha.stage6Wrong >= 2) {
+        // Success path
+        clearInterval(codeRegroupInterval);
+
+        // Celebration: code bounces
+        const codeCanvas = document.getElementById('codeCanvas');
+        codeCanvas.classList.add('code-celebrate');
+        setTimeout(() => codeCanvas.classList.remove('code-celebrate'), 1200);
+
+        showMessage("🎊 Almost there! Finalizing...");
+        setProgress(99);
+
+        // Show fake fingerprint joke
+        const jokeEl = document.getElementById('fingerprintJoke');
+        jokeEl.textContent = 'Just kidding about the fingerprint. We don\'t know how to do that. ✓';
+        jokeEl.classList.remove('hidden');
+
+        // Show spinner
+        const spinner = document.createElement('div');
+        spinner.className = 'spinner';
+        spinner.style.margin = '20px auto';
+        document.getElementById('stage6').appendChild(spinner);
+
+        setTimeout(() => {
+          jokeEl.classList.add('hidden');
+          // Final success!
+          setProgress(100);
+          triggerGrueEnding();
+        }, 1000);
+      } else {
+        captcha.wrongAttempts++;
+        captcha.stage6Wrong++;
+
+        if (captcha.stage6Wrong >= 2 && captcha.stage6Wrong < 3) {
+          // Session timeout scare!
+          showSessionScare();
+        } else if (captcha.stage6Wrong >= 3) {
+          // Final twist - accept anything
+          showMessage("🎊 Almost there! Finalizing...");
+
+          const spinner = document.createElement('div');
+          spinner.className = 'spinner';
+          spinner.style.margin = '20px auto';
+          document.getElementById('stage6').appendChild(spinner);
+
+          setProgress(99);
+
+          setTimeout(() => {
+            setProgress(100);
+            triggerGrueEnding();
+          }, 5000);
+        } else {
+          const msg = stage6WrongMsgs[(captcha.stage6Wrong - 1) % stage6WrongMsgs.length];
+          showMessage(msg, 'blue');
+          renderCode();
+          input.value = '';
+          input.focus();
+        }
+      }
+    }
+
+    function showSessionScare() {
+      const countdownStage = document.getElementById('stage6countdown');
+      const countdownText = document.getElementById('countdownText');
+
+      captchaContainer.style.background = '#FFF3E0';
+      captchaContainer.style.transition = 'background 0.3s';
+
+      advanceToStage('6countdown');
+
+      let count = 10;
+      countdownText.textContent = `⚠️ Hold on... is your session about to expire?`;
+      countdownText.className = 'countdown-text';
+      countdownText.style.color = '#E65100';
+      countdownText.style.animation = 'blink 1s infinite';
+
+      // Add falling emoji
+      const fallingEmoji = document.createElement('div');
+      fallingEmoji.className = 'falling-emoji';
+      fallingEmoji.textContent = '😅';
+      fallingEmoji.style.left = (20 + Math.random() * 60) + '%';
+      captchaContainer.appendChild(fallingEmoji);
+
+      const countInterval = setInterval(() => {
+        count--;
+        if (count > 3) {
+          countdownText.textContent = `${count}...`;
+        }
+
+        if (count <= 3) {
+          clearInterval(countInterval);
+          countdownText.style.animation = '';
+          countdownText.textContent = 'Just kidding! 😄 Sessions don\'t expire here. We were just testing your nerves.';
+          countdownText.style.color = '#2E7D32';
+          captchaContainer.style.background = '#fff';
+
+          setTimeout(() => {
+            advanceToStage(6);
+            captcha.stage6Wrong = 3; // Force auto-advance on next attempt
+            renderCode();
+            const input = document.getElementById('codeInput');
+            input.value = '';
+            input.focus();
+          }, 1500);
+        }
+      }, 1000);
+    }
+
+    // ============================================
+    // CONFETTI & SUCCESS
+    // ============================================
+
+    function initConfetti() {
+      const container = document.getElementById('confettiContainer');
+      container.innerHTML = '';
+
+      // Calculate and show success stats
+      const elapsed = Math.floor((Date.now() - captcha.startTime) / 1000);
+      const min = Math.floor(elapsed / 60);
+      const sec = elapsed % 60;
+      const timeStr = `${min}:${sec.toString().padStart(2, '0')}`;
+      const attempts = captcha.stage6Wrong + 1;
+      document.getElementById('successStats').textContent = `Time: ${timeStr} | Attempts: ${attempts}`;
+
+      const confettiColors = ['#4A90D9', '#43A047', '#FDD835', '#E91E63', '#FF9800', '#9C27B0', '#00BCD4'];
+      const emojiParticles = ['🎉', '🏆', '🎊', '✨'];
+
+      // Screen shake
+      captchaContainer.classList.add('container-shake');
+      setTimeout(() => captchaContainer.classList.remove('container-shake'), 500);
+
+      for (let i = 0; i < 80; i++) {
+        const isEmoji = i < 20 && Math.random() < 0.5;
+        const confetti = document.createElement('div');
+        confetti.className = 'confetti';
+
+        if (isEmoji) {
+          confetti.textContent = emojiParticles[Math.floor(Math.random() * emojiParticles.length)];
+          confetti.style.fontSize = (14 + Math.random() * 10) + 'px';
+          confetti.style.background = 'transparent';
+          confetti.style.width = 'auto';
+          confetti.style.height = 'auto';
+        } else {
+          confetti.style.background = confettiColors[Math.floor(Math.random() * confettiColors.length)];
+          confetti.style.width = (4 + Math.random() * 8) + 'px';
+          confetti.style.height = (4 + Math.random() * 8) + 'px';
+        }
+
+        confetti.style.left = Math.random() * 100 + '%';
+        confetti.style.top = '-10px';
+
+        // Varied physics
+        const goesUp = Math.random() < 0.3;
+        if (goesUp) {
+          confetti.style.animation = `none`;
+          const duration = 2 + Math.random() * 2;
+          confetti.style.transition = `all ${duration}s ease-out`;
+          setTimeout(() => {
+            confetti.style.transform = `translateY(-${100 + Math.random() * 200}px) rotate(${360 + Math.random() * 720}deg)`;
+            confetti.style.opacity = '0';
+          }, 10);
+        } else {
+          confetti.style.animationDuration = (2 + Math.random() * 2) + 's';
+          confetti.style.animationDelay = (Math.random() * 1.5) + 's';
+        }
+
+        container.appendChild(confetti);
+      }
+
+      // Final pulse on progress bar
+      progressFill.classList.add('pulse');
+      setTimeout(() => progressFill.classList.remove('pulse'), 500);
+    }
+
+    // ============================================
+    // GRUE ENDING
+    // ============================================
+
+    function playCreakyDoorSound() {
+      try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const duration = 2.5;
+
+        // Sawtooth oscillator at ~150Hz
+        const oscillator = audioCtx.createOscillator();
+        oscillator.type = 'sawtooth';
+        oscillator.frequency.setValueAtTime(150, audioCtx.currentTime);
+
+        // Vibrato (LFO modulating frequency ±20Hz at 4Hz)
+        const lfo = audioCtx.createOscillator();
+        const lfoGain = audioCtx.createGain();
+        lfo.frequency.setValueAtTime(4, audioCtx.currentTime);
+        lfoGain.gain.setValueAtTime(20, audioCtx.currentTime);
+        lfo.connect(lfoGain);
+        lfoGain.connect(oscillator.frequency);
+
+        // Low-pass filter sweeping from 2000Hz down to 400Hz
+        const filter = audioCtx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(2000, audioCtx.currentTime);
+        filter.frequency.linearRampToValueAtTime(400, audioCtx.currentTime + duration);
+
+        // White noise for texture
+        const noiseBuffer = audioCtx.createBuffer(1, audioCtx.sampleRate * duration, audioCtx.sampleRate);
+        const noiseData = noiseBuffer.getChannelData(0);
+        for (let i = 0; i < noiseData.length; i++) {
+          noiseData[i] = Math.random() * 2 - 1;
+        }
+        const noiseSource = audioCtx.createBufferSource();
+        noiseSource.buffer = noiseBuffer;
+        const noiseGain = audioCtx.createGain();
+        noiseGain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+
+        // Main gain envelope: attack 0.1s, sustain 0.3, decay over 2.5s
+        const mainGain = audioCtx.createGain();
+        mainGain.gain.setValueAtTime(0, audioCtx.currentTime);
+        mainGain.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + 0.1);
+        mainGain.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + 0.5);
+        mainGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + duration);
+
+        // Connect everything
+        oscillator.connect(filter);
+        filter.connect(mainGain);
+        mainGain.connect(audioCtx.destination);
+
+        noiseSource.connect(noiseGain);
+        noiseGain.connect(audioCtx.destination);
+
+        // Start and stop
+        oscillator.start(audioCtx.currentTime);
+        lfo.start(audioCtx.currentTime);
+        noiseSource.start(audioCtx.currentTime);
+        oscillator.stop(audioCtx.currentTime + duration);
+        lfo.stop(audioCtx.currentTime + duration);
+        noiseSource.stop(audioCtx.currentTime + duration);
+      } catch (e) { /* silent fail */ }
+    }
+
+    function playCrunchSound() {
+      try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const duration = 0.8;
+
+        // White noise buffer
+        const bufferSize = audioCtx.sampleRate * duration;
+        const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+        const noiseData = noiseBuffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          noiseData[i] = Math.random() * 2 - 1;
+        }
+
+        const source = audioCtx.createBufferSource();
+        source.buffer = noiseBuffer;
+
+        // Low-pass filter at ~800Hz for bassy/thumpy sound
+        const filter = audioCtx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(800, audioCtx.currentTime);
+        filter.Q.setValueAtTime(1, audioCtx.currentTime);
+
+        // Gain envelope: fast attack, decay over 0.8s
+        const gainNode = audioCtx.createGain();
+        gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+        gainNode.gain.linearRampToValueAtTime(0.5, audioCtx.currentTime + 0.02);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+
+        source.connect(filter);
+        filter.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+
+        source.start(audioCtx.currentTime);
+        source.stop(audioCtx.currentTime + duration);
+      } catch (e) { /* silent fail */ }
+    }
+
+    function triggerGrueEnding() {
+      const overlay = document.getElementById('grueOverlay');
+      const doorLeft = document.getElementById('grueDoorLeft');
+      const doorRight = document.getElementById('grueDoorRight');
+      const eyes = document.getElementById('grueEyes');
+      const irisMask = document.getElementById('grueIrisMask');
+      const crunchPhase = document.getElementById('grueCrunchPhase');
+      const reveal = document.getElementById('grueReveal');
+
+      // Phase 1: Fade out CAPTCHA and show doors
+      captchaContainer.style.transition = 'opacity 1s ease';
+      captchaContainer.style.opacity = '0';
+
+      setTimeout(() => {
+        overlay.classList.add('active');
+        // Play creaky door sound
+        playCreakyDoorSound();
+
+        // Open doors after a brief moment
+        setTimeout(() => {
+          doorLeft.classList.add('open');
+          doorRight.classList.add('open');
+        }, 200);
+      }, 1000);
+
+      // Phase 2: Iris close (after 3 seconds total)
+      setTimeout(() => {
+        eyes.style.transition = 'opacity 1s ease';
+        irisMask.classList.add('closing');
+
+        // Fade out eyes during iris close
+        setTimeout(() => {
+          eyes.style.opacity = '0';
+        }, 1500);
+      }, 3000);
+
+      // Phase 3: Crunch sounds (after 6 seconds total)
+      setTimeout(() => {
+        overlay.classList.remove('active');
+        overlay.style.display = 'none';
+        irisMask.style.display = 'none';
+        crunchPhase.classList.add('active');
+
+        // Wait 1.5 seconds of pure black silence
+        setTimeout(() => {
+          // Play 3-4 crunch sounds with random delays
+          playCrunchSound();
+          setTimeout(() => playCrunchSound(), 200 + Math.random() * 200);
+          setTimeout(() => playCrunchSound(), 400 + Math.random() * 200);
+          setTimeout(() => playCrunchSound(), 600 + Math.random() * 200);
+        }, 1500);
+      }, 6000);
+
+      // Phase 4: Reveal text (after 8 seconds total)
+      setTimeout(() => {
+        crunchPhase.classList.remove('active');
+        reveal.classList.add('active');
+
+        // Fade in lines sequentially
+        const lines = ['grueLine1', 'grueLine2', 'grueLine3', 'grueLine4', 'grueLine5', 'grueLine6'];
+        lines.forEach((id, index) => {
+          setTimeout(() => {
+            document.getElementById(id).classList.add('visible');
+          }, index * 800);
+        });
+
+        // Show button after all lines
+        setTimeout(() => {
+          document.getElementById('grueSurviveBtn').classList.add('visible');
+        }, lines.length * 800 + 500);
+      }, 9000);
+    }
+
+    // Grue survive button handler
+    document.getElementById('grueSurviveBtn').addEventListener('click', () => {
+      const response = document.getElementById('grueSurviveResponse');
+      const btn = document.getElementById('grueSurviveBtn');
+      btn.style.display = 'none';
+      response.classList.add('visible');
+      setTimeout(() => {
+        response.classList.add('fading');
+      }, 2000);
+    });
+
+    // ============================================
+    // INITIALIZATION
+    // ============================================
+
+    startTimer();
+    initStage1();
+    startContainerTitleTimer();
+
+    // Continue button handler
+    document.getElementById('continueBtn').addEventListener('click', () => {
+      const btn = document.getElementById('continueBtn');
+      if (continueClickCount === 0) {
+        btn.textContent = "There's nothing to continue to. This was the whole thing. Thanks for playing! 🎮";
+        btn.classList.add('done');
+        continueClickCount++;
+        setTimeout(() => {
+          btn.textContent = "Okay, for real, you're done. 👍";
+        }, 3000);
+      }
+    });
+  </script>
+</body>
+</html>

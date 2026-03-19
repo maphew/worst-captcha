@@ -2298,11 +2298,40 @@
     // STAGE 5.5: Fake Checkbox
     // ============================================
 
+    function playDullClink() {
+      try {
+        const ctx = getInteractionCtx();
+        const now = ctx.currentTime;
+        const gain = ctx.createGain();
+        // Dull metallic clink: short low triangle burst
+        const osc = ctx.createOscillator();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(280 + Math.random() * 60, now);
+        osc.frequency.exponentialRampToValueAtTime(140, now + 0.06);
+        osc.connect(gain);
+        gain.gain.setValueAtTime(0.15, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.07);
+        osc.start(now);
+        osc.stop(now + 0.07);
+        gain.connect(ctx.destination);
+      } catch(e) { /* silent fail */ }
+    }
+
     function initFakeCheckbox() {
       const container = document.getElementById('fakeCheckboxContainer');
       const checkbox = document.getElementById('fakeCheckbox');
+      let checkboxClicks = 0;
 
       container.onclick = () => {
+        checkboxClicks++;
+        if (checkboxClicks < 3) {
+          // Dull clink — checkbox doesn't activate
+          playDullClink();
+          checkbox.style.transform = 'scale(0.9)';
+          setTimeout(() => { checkbox.style.transform = ''; }, 100);
+          return;
+        }
+        // 3rd click: finally activates
         checkbox.innerHTML = '<div class="spinner" style="width:16px;height:16px;border-width:2px;"></div>';
 
         setTimeout(() => {

@@ -761,6 +761,35 @@
       margin: 16px 0;
     }
 
+    /* Creeping Jagged Border */
+    .creep-border {
+      position: fixed;
+      background: #111;
+      z-index: 9999;
+      pointer-events: none;
+      transition: all 1.5s ease-in-out;
+    }
+    .creep-border-top {
+      top: 0; left: 0; right: 0;
+      height: 0;
+      clip-path: none;
+    }
+    .creep-border-bottom {
+      bottom: 0; left: 0; right: 0;
+      height: 0;
+      clip-path: none;
+    }
+    .creep-border-left {
+      top: 0; left: 0; bottom: 0;
+      width: 0;
+      clip-path: none;
+    }
+    .creep-border-right {
+      top: 0; right: 0; bottom: 0;
+      width: 0;
+      clip-path: none;
+    }
+
     /* Grue Ending Styles */
     .grue-overlay {
       position: fixed;
@@ -945,6 +974,10 @@
   </style>
 </head>
 <body>
+  <div class="creep-border creep-border-top" id="creepBorderTop"></div>
+  <div class="creep-border creep-border-bottom" id="creepBorderBottom"></div>
+  <div class="creep-border creep-border-left" id="creepBorderLeft"></div>
+  <div class="creep-border creep-border-right" id="creepBorderRight"></div>
   <div class="captcha-container" id="captchaContainer" title="You've been staring at this for 0 seconds now">
     <div class="header">
       <h1>Quick Human Verification</h1>
@@ -1199,6 +1232,80 @@
       const shadow = stageHeaderShadows[stageNum];
       if (bg) document.body.style.backgroundColor = bg;
       if (shadow) document.querySelector('.header h1').style.textShadow = shadow;
+      updateCreepBorders(stageNum);
+    }
+
+    // Creeping jagged border sizes per stage (in px)
+    const creepSizes = { 1: 0, 2: 15, 3: 28, 4: 42, 5: 58, 6: 78 };
+
+    function generateZigzagClipPathH(width, height, teeth) {
+      // Jagged inner edge along the bottom of a horizontal strip
+      const points = [];
+      const toothW = width / teeth;
+      points.push('0% 0%');
+      points.push('100% 0%');
+      // Bottom edge with jagged teeth pointing inward
+      for (let i = teeth; i >= 0; i--) {
+        const x = (i / teeth) * 100;
+        const peak = i % 2 === 0 ? `${x}% 100%` : `${x}% 0%`;
+        points.push(peak);
+      }
+      return `polygon(${points.join(', ')})`;
+    }
+
+    function generateZigzagClipPathV(width, height, teeth) {
+      // Jagged inner edge along the right of a vertical strip
+      const points = [];
+      const toothH = height / teeth;
+      points.push('0% 0%');
+      // Right edge with jagged teeth pointing inward
+      for (let i = 0; i <= teeth; i++) {
+        const y = (i / teeth) * 100;
+        const peak = i % 2 === 0 ? `100% ${y}%` : `0% ${y}%`;
+        points.push(peak);
+      }
+      points.push('0% 100%');
+      return `polygon(${points.join(', ')})`;
+    }
+
+    function updateCreepBorders(stage) {
+      const size = creepSizes[stage] || 0;
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const toothCount = 18;
+
+      const top = document.getElementById('creepBorderTop');
+      const bottom = document.getElementById('creepBorderBottom');
+      const left = document.getElementById('creepBorderLeft');
+      const right = document.getElementById('creepBorderRight');
+
+      if (size === 0) {
+        top.style.height = '0';
+        bottom.style.height = '0';
+        left.style.width = '0';
+        right.style.width = '0';
+        top.style.clipPath = 'none';
+        bottom.style.clipPath = 'none';
+        left.style.clipPath = 'none';
+        right.style.clipPath = 'none';
+        return;
+      }
+
+      top.style.height = size + 'px';
+      bottom.style.height = size + 'px';
+      left.style.width = size + 'px';
+      right.style.width = size + 'px';
+
+      // Bottom edge of top strip: teeth pointing down
+      top.style.clipPath = generateZigzagClipPathH(vw, size, toothCount);
+      // Top edge of bottom strip: teeth pointing up (flip)
+      bottom.style.clipPath = generateZigzagClipPathH(vw, size, toothCount);
+      bottom.style.transform = 'scaleY(-1)';
+      // Right edge of left strip: teeth pointing right
+      left.style.clipPath = generateZigzagClipPathV(size, vh, toothCount);
+      // Left edge of right strip: teeth pointing left (flip)
+      right.style.clipPath = generateZigzagClipPathV(size, vh, toothCount);
+      right.style.transform = 'scaleX(-1)';
     }
 
     function advanceToStage(n) {

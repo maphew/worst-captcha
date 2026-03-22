@@ -49,6 +49,20 @@
       margin-top: 4px;
     }
 
+    .sound-toggle {
+      background: none;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: border-color 0.2s;
+      line-height: 1;
+    }
+
+    .sound-toggle:hover { border-color: #999; }
+    .sound-toggle.muted { opacity: 0.5; }
+
     .subtitle {
       font-size: 13px;
       color: #666;
@@ -971,6 +985,410 @@
     .grue-survive-response.fading {
       opacity: 0;
     }
+
+    /* Responsive */
+    @media (max-width: 480px) {
+      .captcha-container {
+        width: 100%;
+        min-height: 100vh;
+        border-radius: 0;
+        padding: 16px;
+      }
+
+      .header h1 { font-size: 16px; }
+      .image-grid { max-width: 280px; }
+      .grid-image { width: 85px; height: 85px; }
+      .target-canvas { width: 80px; height: 80px; }
+      .word-canvas { width: 240px; height: 70px; }
+      .code-canvas { width: 200px; height: 70px; }
+      .dot-area { width: 180px; height: 180px; }
+      .clickable-dot { width: 32px; height: 32px; font-size: 12px; }
+      .audio-buttons { gap: 16px; }
+      .audio-btn { width: 44px; height: 44px; font-size: 18px; }
+      .success-title.big { font-size: 22px; }
+      .grue-text-line { font-size: 12px; }
+    }
+
+    /* Dark mode */
+    body.dark-mode {
+      background: #1a1a2e !important;
+    }
+
+    body.dark-mode .captcha-container {
+      background: rgba(30, 30, 50, 0.95);
+      color: #e0e0e0;
+    }
+
+    body.dark-mode .header h1 { color: #e0e0e0; text-shadow: none; }
+    body.dark-mode .timer { color: #888; }
+    body.dark-mode .subtitle { color: #aaa; }
+    body.dark-mode .progress-track { background: #2a2a40; }
+    body.dark-mode .progress-text { color: #aaa; }
+    body.dark-mode .message-area { color: #81c784; }
+    body.dark-mode .message-area.blue { color: #64b5f6; }
+    body.dark-mode .message-area.red { color: #ef5350; }
+    body.dark-mode .stage2-prompt { color: #e0e0e0; }
+    body.dark-mode .footer { color: #666; }
+    body.dark-mode .footer a { color: #666; }
+    body.dark-mode .footer a:hover { color: #aaa; }
+    body.dark-mode .shield-text { color: #555; }
+    body.dark-mode .code-header { color: #e0e0e0; }
+    body.dark-mode .code-prompt { color: #aaa; }
+    body.dark-mode .stage3-input,
+    body.dark-mode .code-input,
+    body.dark-mode #longerPathInput {
+      background: #2a2a40;
+      color: #e0e0e0;
+      border-color: #444;
+    }
+    body.dark-mode .stage3-input:focus,
+    body.dark-mode .code-input:focus,
+    body.dark-mode #longerPathInput:focus {
+      border-color: #5c6bc0;
+    }
+    body.dark-mode .submit-btn,
+    body.dark-mode .continue-btn {
+      background: #5c6bc0;
+    }
+    body.dark-mode .submit-btn:hover,
+    body.dark-mode .continue-btn:hover {
+      background: #7986cb;
+    }
+    body.dark-mode .verify-btn {
+      background: #5c6bc0;
+    }
+    body.dark-mode .verify-btn:hover {
+      background: #7986cb;
+    }
+    body.dark-mode .audio-notice {
+      background: #2a2a40;
+      color: #ccc;
+      border-left-color: #5c6bc0;
+    }
+    body.dark-mode .word-canvas,
+    body.dark-mode #longerPathCanvas,
+    body.dark-mode .code-canvas {
+      background: #252540;
+    }
+    body.dark-mode .fake-checkbox-container {
+      border-color: #444;
+      background: #2a2a40;
+    }
+    body.dark-mode .fake-checkbox-label { color: #e0e0e0; }
+    body.dark-mode .creep-border { background: #0a0a1a; }
+    body.dark-mode .version-stamp { color: #444; }
+    body.dark-mode .loading-text { color: #777; }
+    body.dark-mode .milestone-msg { color: #777; }
+    body.dark-mode .countdown-text { color: #ffcc80; }
+    body.dark-mode .countdown-text.red { color: #ef5350; }
+    body.dark-mode .countdown-text.green { color: #81c784; }
+    body.dark-mode .sequence-hint { color: #999; }
+    body.dark-mode .word-hint { color: #555; }
+    body.dark-mode .mic-warning-note { background: #3a2a1a; border-left-color: #ff9800; color: #ffb74d; }
+    body.dark-mode #micStatusText { color: #e0e0e0; }
+    body.dark-mode #micRetryArea p { color: #aaa; }
+    body.dark-mode .audio-prompt { color: #e0e0e0; }
+    body.dark-mode #stage4MicPrompt p { color: #aaa; }
+    body.dark-mode #stage4NoSupport p { color: #aaa; }
+    body.dark-mode .fingerprint-joke { color: #81c784; }
+
+    /* ============================================
+       FEATURE 1: The Judging Progress Bar
+       ============================================ */
+    .progress-wobble {
+      animation: wobble-back 0.5s ease-in-out;
+    }
+
+    @keyframes wobble-back {
+      0%, 100% { transform: scaleX(1); }
+      25% { transform: scaleX(0.98); }
+      75% { transform: scaleX(1.02); }
+    }
+
+    .judgment-bubble {
+      position: absolute;
+      background: #333;
+      color: #fff;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 11px;
+      opacity: 0;
+      transition: opacity 0.3s, transform 0.3s;
+      transform: translateY(5px);
+      white-space: nowrap;
+      z-index: 10;
+    }
+
+    .judgment-bubble.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .dark-mode .judgment-bubble {
+      background: #555;
+    }
+
+    /* ============================================
+       FEATURE 2: Cursor Commentary
+       ============================================ */
+    .cursor-commentary {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.85);
+      color: #fff;
+      padding: 10px 20px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-style: italic;
+      opacity: 0;
+      transition: opacity 0.5s ease;
+      z-index: 1000;
+      max-width: 400px;
+      text-align: center;
+      pointer-events: none;
+    }
+
+    .cursor-commentary.visible {
+      opacity: 1;
+    }
+
+    .cursor-commentary .observation {
+      color: #FFD600;
+    }
+
+    /* ============================================
+       FEATURE 3: Existential Stage Breaks
+       ============================================ */
+    .existential-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.7);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 500;
+      opacity: 0;
+      transition: opacity 0.5s ease;
+    }
+
+    .existential-overlay.active {
+      display: flex;
+      opacity: 1;
+    }
+
+    .existential-card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 40px;
+      max-width: 450px;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      transform: scale(0.9);
+      transition: transform 0.3s ease;
+    }
+
+    .existential-overlay.active .existential-card {
+      transform: scale(1);
+    }
+
+    .existential-question {
+      font-size: 18px;
+      color: #333;
+      margin-bottom: 24px;
+      line-height: 1.5;
+      font-style: italic;
+    }
+
+    .existential-options {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .existential-btn {
+      padding: 12px 24px;
+      border: 2px solid #4A90D9;
+      background: transparent;
+      color: #4A90D9;
+      border-radius: 8px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .existential-btn:hover {
+      background: #4A90D9;
+      color: #fff;
+    }
+
+    .existential-subtext {
+      font-size: 11px;
+      color: #999;
+      margin-top: 16px;
+      font-style: italic;
+      min-height: 16px;
+    }
+
+    body.dark-mode .existential-card {
+      background: #1e1e32;
+    }
+
+    body.dark-mode .existential-question {
+      color: #e0e0e0;
+    }
+
+    body.dark-mode .existential-btn {
+      border-color: #5c6bc0;
+      color: #5c6bc0;
+    }
+
+    body.dark-mode .existential-btn:hover {
+      background: #5c6bc0;
+      color: #fff;
+    }
+
+    body.dark-mode .existential-subtext {
+      color: #888;
+    }
+
+    /* ============================================
+       FEATURE 4: The Watching Eye
+       ============================================ */
+    .watching-eye {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(0, 0, 0, 0.8);
+      padding: 8px 16px;
+      border-radius: 20px;
+      opacity: 0;
+      transition: opacity 0.5s ease;
+      z-index: 100;
+    }
+
+    .watching-eye.visible {
+      opacity: 1;
+    }
+
+    .watching-eye .rec-dot {
+      width: 10px;
+      height: 10px;
+      background: #E53935;
+      border-radius: 50%;
+      animation: rec-blink 1s infinite;
+    }
+
+    .watching-eye .rec-text {
+      color: #fff;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    @keyframes rec-blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    .watching-eye .frame-counter {
+      color: #888;
+      font-size: 10px;
+      font-family: monospace;
+    }
+
+    .eye-commentary {
+      position: fixed;
+      top: 60px;
+      right: 20px;
+      background: rgba(0, 0, 0, 0.9);
+      color: #FFD600;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-style: italic;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      z-index: 100;
+      max-width: 250px;
+    }
+
+    .eye-commentary.visible {
+      opacity: 1;
+    }
+
+    /* ============================================
+       FEATURE 5: Achievement Unlocked
+       ============================================ */
+    .achievement-popup {
+      position: fixed;
+      top: -100px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      border: 2px solid #FFD700;
+      border-radius: 12px;
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 20px rgba(255, 215, 0, 0.3);
+      z-index: 1001;
+      transition: top 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+      max-width: 400px;
+    }
+
+    .achievement-popup.visible {
+      top: 20px;
+    }
+
+    .achievement-icon {
+      font-size: 36px;
+      animation: achievement-shine 2s infinite;
+    }
+
+    @keyframes achievement-shine {
+      0%, 100% { filter: brightness(1); }
+      50% { filter: brightness(1.3); }
+    }
+
+    .achievement-content {
+      flex: 1;
+    }
+
+    .achievement-label {
+      font-size: 10px;
+      color: #FFD700;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 4px;
+    }
+
+    .achievement-title {
+      font-size: 16px;
+      color: #fff;
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+
+    .achievement-desc {
+      font-size: 12px;
+      color: #888;
+      font-style: italic;
+    }
+
+    .achievement-xp {
+      font-size: 11px;
+      color: #4A90D9;
+      font-weight: 600;
+    }
   </style>
 </head>
 <body>
@@ -981,7 +1399,11 @@
   <div class="captcha-container" id="captchaContainer" title="You've been staring at this for 0 seconds now">
     <div class="header">
       <h1>Quick Human Verification</h1>
-      <span class="timer" id="timer" title="Time you'll never get back 😅">Time: 0:00</span>
+      <div style="display: flex; gap: 8px; align-items: center;">
+        <button class="sound-toggle" id="soundToggle" title="Toggle sound effects">🔊</button>
+        <button class="sound-toggle" id="darkModeToggle" title="Toggle dark mode">🌙</button>
+        <span class="timer" id="timer" title="Time you'll never get back 😅">Time: 0:00</span>
+      </div>
     </div>
     <p class="subtitle">Please complete this brief check to continue</p>
 
@@ -990,6 +1412,7 @@
         <div class="progress-fill" id="progressFill"></div>
       </div>
       <div class="progress-text" id="progressText" title="This is accurate* (*not actually accurate)">0% complete</div>
+      <div class="judgment-bubble" id="judgmentBubble"></div>
       <div class="milestone-msg" id="milestoneMsg"></div>
       <div class="message-area" id="messageArea"></div>
     </div>
@@ -1115,6 +1538,32 @@
     <div class="shield-text" title="Not a real product. Not even a little.">🔒 Protected by VerifyShield™</div>
     <div class="version-stamp" style="text-align: center; font-size: 9px; color: #ccc; margin-top: 4px; font-family: monospace;">9a5fb15 · 2026-03-19</div>
     <div class="skip-link" id="skipLink">or just skip this step</div>
+  </div>
+
+  <!-- Feature HTML Elements -->
+  <div class="cursor-commentary" id="cursorCommentary"></div>
+  <div class="existential-overlay" id="existentialOverlay">
+    <div class="existential-card">
+      <p class="existential-question" id="existentialQuestion"></p>
+      <div class="existential-options" id="existentialOptions"></div>
+      <p class="existential-subtext" id="existentialSubtext"></p>
+    </div>
+  </div>
+  <div class="watching-eye" id="watchingEye">
+    <span class="eye-icon">👁️</span>
+    <span class="rec-dot"></span>
+    <span class="rec-text">REC</span>
+    <span class="frame-counter" id="frameCounter">0000</span>
+  </div>
+  <div class="eye-commentary" id="eyeCommentary"></div>
+  <div class="achievement-popup" id="achievementPopup">
+    <div class="achievement-icon" id="achievementIcon">🏆</div>
+    <div class="achievement-content">
+      <div class="achievement-label">Achievement Unlocked</div>
+      <div class="achievement-title" id="achievementTitle"></div>
+      <div class="achievement-desc" id="achievementDesc"></div>
+      <div class="achievement-xp" id="achievementXp"></div>
+    </div>
   </div>
 
   <!-- Grue Ending Overlay -->
@@ -1309,6 +1758,13 @@
     }
 
     function advanceToStage(n) {
+      // Clean up intervals from previous stage
+      if (shuffleInterval) { clearInterval(shuffleInterval); shuffleInterval = null; }
+      if (cursorJumpInterval) { clearInterval(cursorJumpInterval); cursorJumpInterval = null; }
+      if (marginShiftInterval) { clearInterval(marginShiftInterval); marginShiftInterval = null; }
+      if (codeRegroupInterval) { clearInterval(codeRegroupInterval); codeRegroupInterval = null; }
+      if (stage5ShuffleInterval) { clearInterval(stage5ShuffleInterval); stage5ShuffleInterval = null; }
+
       const current = document.querySelector('.stage:not(.hidden)');
       if (current) current.classList.add('hidden');
       const next = document.getElementById('stage' + n);
@@ -1518,6 +1974,7 @@
     // ============================================
 
     function playWhoosh() {
+      if (!soundEnabled) return;
       try {
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         const oscillator = audioCtx.createOscillator();
@@ -1538,6 +1995,32 @@
       } catch(e) { /* silent fail */ }
     }
 
+    // Sound toggle
+    let soundEnabled = true;
+
+    function initSoundToggle() {
+      const toggle = document.getElementById('soundToggle');
+      toggle.addEventListener('click', () => {
+        soundEnabled = !soundEnabled;
+        toggle.textContent = soundEnabled ? '🔊' : '🔇';
+        toggle.classList.toggle('muted', !soundEnabled);
+        toggle.title = soundEnabled ? 'Mute sound effects' : 'Enable sound effects';
+      });
+    }
+
+    // Dark mode toggle
+    let darkMode = false;
+
+    function initDarkModeToggle() {
+      const toggle = document.getElementById('darkModeToggle');
+      toggle.addEventListener('click', () => {
+        darkMode = !darkMode;
+        document.body.classList.toggle('dark-mode', darkMode);
+        toggle.textContent = darkMode ? '☀️' : '🌙';
+        toggle.title = darkMode ? 'Switch to light mode' : 'Switch to dark mode';
+      });
+    }
+
     // Interaction sound: subtle tick/dink/clunk for clicks and typing
     let interactionAudioCtx = null;
     function getInteractionCtx() {
@@ -1548,6 +2031,7 @@
     }
 
     function playInteractionSound() {
+      if (!soundEnabled) return;
       try {
         const ctx = getInteractionCtx();
         const now = ctx.currentTime;
@@ -1597,6 +2081,7 @@
 
     // Submit sound: stronger, deeper, more satisfying
     function playSubmitSound() {
+      if (!soundEnabled) return;
       try {
         const ctx = getInteractionCtx();
         const now = ctx.currentTime;
@@ -1831,8 +2316,10 @@
         setProgress(60);
 
         setTimeout(() => {
-          advanceToStage(3);
-          initStage3();
+          maybeExistentialBreak(() => {
+            advanceToStage(3);
+            initStage3();
+          });
         }, 1000);
       } else {
         // Wrong
@@ -1842,6 +2329,8 @@
         const msg = stage2WrongMsgs[(captcha.wrongAttempts - 1) % stage2WrongMsgs.length];
         showMessage(msg, 'blue');
         setProgress(Math.min(60, 40 + captcha.wrongAttempts * 4));
+        triggerEyeOnAction();
+        triggerActionAchievement('wrong');
       }
     }
 
@@ -1858,6 +2347,7 @@
       renderWord();
 
       const input = document.getElementById('wordInput');
+      const submitBtn = document.getElementById('wordSubmit');
       input.value = '';
       input.focus();
 
@@ -1877,10 +2367,10 @@
         }
       }, 1500);
 
-      document.getElementById('wordSubmit').addEventListener('click', handleWordSubmit);
-      input.addEventListener('keydown', (e) => {
+      submitBtn.onclick = handleWordSubmit;
+      input.onkeydown = (e) => {
         if (e.key === 'Enter') handleWordSubmit();
-      });
+      };
     }
 
     function renderWord() {
@@ -1946,14 +2436,18 @@
           setProgress(72);
 
           setTimeout(() => {
-            advanceToStage(4);
-            initStage4();
+            maybeExistentialBreak(() => {
+              advanceToStage(4);
+              initStage4();
+            });
           }, 800);
         } else {
           captcha.wrongAttempts++;
           const msg = stage3WrongMsgs[(captcha.wrongAttempts - 1) % stage3WrongMsgs.length];
           showMessage(msg, 'blue');
           setProgress(Math.min(72, 60 + captcha.wrongAttempts * 4));
+          triggerEyeOnAction();
+          triggerActionAchievement('wrong');
           renderWord();
           input.value = '';
           input.disabled = false;
@@ -1984,7 +2478,7 @@
       // Initialize button hover behavior
       initStage4ReadyBtn();
 
-      document.getElementById('audioReadyBtn').addEventListener('click', () => {
+      document.getElementById('audioReadyBtn').onclick = () => {
         const btn = document.getElementById('audioReadyBtn');
         btn.textContent = 'Brave soul! Here we go...';
         btn.disabled = true;
@@ -1993,7 +2487,7 @@
           document.getElementById('stage4MicPrompt').classList.remove('hidden');
           initMicPermissionPrompt();
         }, 1000);
-      });
+      };
     }
 
     function showMicApology(noSupportDivId, skipBtnId) {
@@ -2045,34 +2539,41 @@
           statusEl.style.color = '#2E7D32';
           setProgress(88);
           setTimeout(() => {
-            advanceToStage(5);
-            initStage5();
+            maybeExistentialBreak(() => {
+              advanceToStage(5);
+              initStage5();
+            });
           }, 2000);
         } else {
           captcha.wrongAttempts++;
           statusEl.textContent = "Almost! Check your spelling and try again. You've got this!";
           statusEl.style.color = '#1565C0';
+          triggerEyeOnAction();
+          triggerActionAchievement('wrong');
           if (captcha.wrongAttempts >= 3) {
             statusEl.textContent = "✓ Close enough! Thanks for sticking with it!";
             statusEl.style.color = '#2E7D32';
             setProgress(88);
             setTimeout(() => {
-              advanceToStage(5);
-              initStage5();
+              maybeExistentialBreak(() => {
+                advanceToStage(5);
+                initStage5();
+              });
             }, 2000);
           }
         }
       }
 
-      submitBtn.addEventListener('click', handleLongerPathSubmit);
-      input.addEventListener('keydown', (e) => {
+      submitBtn.onclick = handleLongerPathSubmit;
+      input.onkeydown = (e) => {
         if (e.key === 'Enter') handleLongerPathSubmit();
-      });
+      };
 
       // Enable typing sounds on this input
-      input.addEventListener('keydown', (e) => {
+      input.onkeydown = (e) => {
         if (e.key.length === 1) playInteractionSound();
-      });
+        if (e.key === 'Enter') handleLongerPathSubmit();
+      };
     }
 
     function renderLongerPathWord(word) {
@@ -2134,7 +2635,7 @@
         return;
       }
 
-      enableMicBtn.addEventListener('click', async () => {
+      enableMicBtn.onclick = async () => {
         enableMicBtn.disabled = true;
         statusText.textContent = '';
         try {
@@ -2156,20 +2657,20 @@
           enableMicBtn.textContent = '🎤 Try Again';
           retryArea.classList.remove('hidden');
         }
-      });
+      };
 
       // Retry button: re-enable the mic button
-      document.getElementById('retryMicBtn').addEventListener('click', () => {
+      document.getElementById('retryMicBtn').onclick = () => {
         enableMicBtn.disabled = false;
         enableMicBtn.textContent = '🎤 Enable Microphone';
         statusText.textContent = '';
         retryArea.classList.add('hidden');
-      });
+      };
 
       // Skip to longer path
-      document.getElementById('skipToLongerPathBtn').addEventListener('click', () => {
+      document.getElementById('skipToLongerPathBtn').onclick = () => {
         showLongerPath();
-      });
+      };
     }
 
     function initVoiceChallenge() {
@@ -2177,7 +2678,7 @@
       const micBtn = document.getElementById('micBtn');
       const listeningText = document.getElementById('listeningText');
 
-      speakBtn.addEventListener('click', () => {
+      speakBtn.onclick = () => {
         if ('speechSynthesis' in window) {
           const utterance = new SpeechSynthesisUtterance(captcha.targetWord);
           utterance.rate = 2.5;
@@ -2185,9 +2686,9 @@
           utterance.pitch = 0.8;
           speechSynthesis.speak(utterance);
         }
-      });
+      };
 
-      micBtn.addEventListener('click', () => {
+      micBtn.onclick = () => {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         const recognition = new SpeechRecognition();
         recognition.continuous = false;
@@ -2210,14 +2711,18 @@
             showMessage(captcha.wrongAttempts >= 2 ? "🎤 Voice confirmed! Your vocal cords pass the test." : "🎤 Voice confirmed! Your vocal cords pass the test.");
             setProgress(88);
             setTimeout(() => {
-              advanceToStage(5);
-              initStage5();
+              maybeExistentialBreak(() => {
+                advanceToStage(5);
+                initStage5();
+              });
             }, 1000);
           } else {
             captcha.wrongAttempts++;
             const msg = stage4WrongMsgs[(captcha.wrongAttempts - 1) % stage4WrongMsgs.length];
             showMessage(msg, 'blue');
             setProgress(Math.min(88, 82 + captcha.wrongAttempts * 3));
+            triggerEyeOnAction();
+            triggerActionAchievement('wrong');
           }
         };
 
@@ -2243,12 +2748,14 @@
         setTimeout(() => {
           try { recognition.stop(); } catch(e) {}
         }, 3000);
-      });
+      };
     }
 
     // ============================================
     // STAGE 5: Security Pattern
     // ============================================
+
+    let stage5ShuffleInterval = null;
 
     function initStage5() {
       captcha.wrongAttempts = 0;
@@ -2275,7 +2782,8 @@
       createDots(dotColors);
 
       // Shuffle dot positions every 3 seconds
-      setInterval(() => {
+      if (stage5ShuffleInterval) clearInterval(stage5ShuffleInterval);
+      stage5ShuffleInterval = setInterval(() => {
         if (captcha.stage !== 5) return;
         shuffleDots(dotColors);
       }, 3000);
@@ -2369,6 +2877,8 @@
         showMessage(msg, 'blue');
         setProgress(Math.min(95, 88 + captcha.wrongAttempts * 2));
         captcha.userSequence = [];
+        triggerEyeOnAction();
+        triggerActionAchievement('wrong');
 
         document.querySelectorAll('.clickable-dot').forEach(d => d.classList.remove('selected'));
 
@@ -2406,6 +2916,7 @@
     // ============================================
 
     function playDullClink() {
+      if (!soundEnabled) return;
       try {
         const ctx = getInteractionCtx();
         const now = ctx.currentTime;
@@ -2447,8 +2958,10 @@
           setProgress(97);
 
           setTimeout(() => {
-            advanceToStage(6);
-            initStage6();
+            maybeExistentialBreak(() => {
+              advanceToStage(6);
+              initStage6();
+            });
           }, 500);
         }, 3000);
       };
@@ -2568,6 +3081,8 @@
       } else {
         captcha.wrongAttempts++;
         captcha.stage6Wrong++;
+        triggerEyeOnAction();
+        triggerActionAchievement('wrong');
 
         if (captcha.stage6Wrong >= 2 && captcha.stage6Wrong < 3) {
           // Session timeout scare!
@@ -2715,6 +3230,7 @@
     // ============================================
 
     function playCreakyDoorSound() {
+      if (!soundEnabled) return;
       try {
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         const duration = 2.5;
@@ -2775,6 +3291,7 @@
     }
 
     function playCrunchSound() {
+      if (!soundEnabled) return;
       try {
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         const duration = 0.8;
@@ -2896,6 +3413,466 @@
     });
 
     // ============================================
+    // HELPER FUNCTIONS
+    // ============================================
+
+    function randomFrom(arr) {
+      return arr[Math.floor(Math.random() * arr.length)];
+    }
+
+    // ============================================
+    // FEATURE 1: The Judging Progress Bar
+    // ============================================
+
+    const judgmentMessages = [
+      "Hmm, that was... suspicious.",
+      "Are you sure you're human?",
+      "Your hesitation is noted.",
+      "Interesting click pattern...",
+      "Bots don't usually pause like that.",
+      "We're watching your progress carefully.",
+      "That took longer than expected.",
+      "Your cursor movements are... unique.",
+      "Just verifying your humanity. Again.",
+      "Progress looks good. For now.",
+      "Don't get comfortable.",
+      "We've seen faster humans.",
+      "Are you reading the instructions? You shouldn't be.",
+      "Your verification pattern matches known bot behavior. (Kidding. Maybe.)"
+    ];
+
+    let lastJudgmentTime = 0;
+
+    function triggerJudgment() {
+      const now = Date.now();
+      if (now - lastJudgmentTime < 8000) return;
+      lastJudgmentTime = now;
+
+      const progressFill = document.getElementById('progressFill');
+      const bubble = document.getElementById('judgmentBubble');
+
+      const currentProgress = captcha.progress;
+      const wobbleBack = Math.max(0, currentProgress - (2 + Math.random() * 3));
+
+      progressFill.classList.add('progress-wobble');
+      setTimeout(() => progressFill.classList.remove('progress-wobble'), 500);
+
+      progressFill.style.width = wobbleBack + '%';
+
+      const msg = judgmentMessages[Math.floor(Math.random() * judgmentMessages.length)];
+      bubble.textContent = msg;
+      bubble.classList.add('visible');
+
+      setTimeout(() => {
+        progressFill.style.width = currentProgress + '%';
+        bubble.classList.remove('visible');
+      }, 2000);
+    }
+
+    function startJudgmentTimer() {
+      setInterval(() => {
+        if (Math.random() < 0.3 && captcha.stage >= 1) {
+          triggerJudgment();
+        }
+      }, 12000);
+    }
+
+    // ============================================
+    // FEATURE 2: Cursor Commentary
+    // ============================================
+
+    const cursorObservations = {
+      hovering: [
+        "You've hovered over that {count} times. Having trouble deciding?",
+        "That button is getting a lot of attention. {count} hovers.",
+        "Still hovering? We have all day.",
+        "Your cursor is very twitchy. Are you nervous?"
+      ],
+      stillness: [
+        "You stopped moving. Are you thinking? Don't.",
+        "Frozen in fear? Or just admiring our design?",
+        "Still as a bot would be. Interesting.",
+        "Not moving won't make this go faster."
+      ],
+      edges: [
+        "Trying to escape? There's no escape.",
+        "Looking for an exit? We removed those.",
+        "Edge of the screen won't help you now."
+      ],
+      circles: [
+        "Round and round we go.",
+        "That circular motion is very bot-like.",
+        "Our tracking shows circular patterns."
+      ],
+      random: [
+        "Interesting mouse pattern...",
+        "We're analyzing your cursor trajectory.",
+        "Your movements are being recorded. For science.",
+        "Our algorithms are studying you."
+      ]
+    };
+
+    const cursorState = {
+      lastPositions: [],
+      hoverCounts: {},
+      lastCommentTime: 0,
+      totalMoves: 0
+    };
+
+    function initCursorCommentary() {
+      const commentary = document.getElementById('cursorCommentary');
+      let stillnessTimer = null;
+
+      document.addEventListener('mousemove', (e) => {
+        cursorState.totalMoves++;
+        cursorState.lastPositions.push({ x: e.clientX, y: e.clientY, time: Date.now() });
+        if (cursorState.lastPositions.length > 50) cursorState.lastPositions.shift();
+
+        if (stillnessTimer) clearTimeout(stillnessTimer);
+        stillnessTimer = setTimeout(() => {
+          showCursorComment(randomFrom(cursorObservations.stillness));
+        }, 3000);
+
+        const margin = 50;
+        if (e.clientX < margin || e.clientX > window.innerWidth - margin ||
+            e.clientY < margin || e.clientY > window.innerHeight - margin) {
+          maybeShowComment(cursorObservations.edges);
+        }
+      });
+
+      document.querySelectorAll('button, input, .grid-image, .clickable-dot').forEach(el => {
+        el.addEventListener('mouseenter', () => {
+          const id = el.id || el.className;
+          cursorState.hoverCounts[id] = (cursorState.hoverCounts[id] || 0) + 1;
+
+          if (cursorState.hoverCounts[id] >= 3 && cursorState.hoverCounts[id] % 2 === 0) {
+            const msg = randomFrom(cursorObservations.hovering).replace('{count}', cursorState.hoverCounts[id]);
+            showCursorComment(msg);
+          }
+        });
+      });
+
+      setInterval(() => {
+        if (Math.random() < 0.2) {
+          maybeShowComment(cursorObservations.random);
+        }
+      }, 20000);
+    }
+
+    function maybeShowComment(messages) {
+      const now = Date.now();
+      if (now - cursorState.lastCommentTime < 15000) return;
+      showCursorComment(randomFrom(messages));
+    }
+
+    function showCursorComment(message) {
+      const commentary = document.getElementById('cursorCommentary');
+      const now = Date.now();
+      if (now - cursorState.lastCommentTime < 15000) return;
+      cursorState.lastCommentTime = now;
+
+      commentary.innerHTML = `<span class="observation">👁️ Observation:</span> ${message}`;
+      commentary.classList.add('visible');
+
+      setTimeout(() => {
+        commentary.classList.remove('visible');
+      }, 4000);
+    }
+
+    // ============================================
+    // FEATURE 3: Existential Stage Breaks
+    // ============================================
+
+    const existentialQuestions = [
+      {
+        question: "If you close this tab, do you still exist?",
+        options: [
+          { text: "Yes", subtext: "Bold claim." },
+          { text: "No", subtext: "At least you're honest." },
+          { text: "I don't know anymore", subtext: "Valid." }
+        ]
+      },
+      {
+        question: "Are you certain you're not a sophisticated chatbot?",
+        options: [
+          { text: "I'm definitely human", subtext: "That's exactly what a bot would say." },
+          { text: "I might be a bot", subtext: "Self-aware. Rare." },
+          { text: "What is 'human' anyway?", subtext: "Deep. Too deep." }
+        ]
+      },
+      {
+        question: "What is the sound of one CAPTCHA completing?",
+        options: [
+          { text: "A satisfying click", subtext: "How poetic." },
+          { text: "Silence", subtext: "Enlightened." },
+          { text: "My screaming", subtext: "We hear that a lot." }
+        ]
+      },
+      {
+        question: "You've been staring at this for a while. Blink if you need help.",
+        options: [
+          { text: "*blinks*", subtext: "We'll interpret that as 'I'm fine'." },
+          { text: "I'm fine", subtext: "Sure you are." },
+          { text: "Let me through", subtext: "Demanding. We respect that." }
+        ]
+      },
+      {
+        question: "Does this CAPTCHA verify you, or do you verify the CAPTCHA?",
+        options: [
+          { text: "The CAPTCHA verifies me", subtext: "That's what they all say." },
+          { text: "I verify the CAPTCHA", subtext: "Interesting power dynamic." },
+          { text: "Neither. Nothing is real.", subtext: "Please seek help." }
+        ]
+      },
+      {
+        question: "In a parallel universe, you completed this on the first try.",
+        options: [
+          { text: "I want to be in that universe", subtext: "We all do." },
+          { text: "This is my villain origin story", subtext: "Understandable." },
+          { text: "Cool story, bro", subtext: "Was that a human reference?" }
+        ]
+      }
+    ];
+
+    let existentialUsed = [];
+
+    function triggerExistentialBreak(callback) {
+      if (existentialUsed.length >= existentialQuestions.length) {
+        existentialUsed = [];
+      }
+
+      let available = existentialQuestions.filter((_, i) => !existentialUsed.includes(i));
+      const questionIndex = existentialQuestions.indexOf(randomFrom(available));
+      existentialUsed.push(questionIndex);
+
+      const questionData = existentialQuestions[questionIndex];
+      const overlay = document.getElementById('existentialOverlay');
+      const questionEl = document.getElementById('existentialQuestion');
+      const optionsEl = document.getElementById('existentialOptions');
+      const subtextEl = document.getElementById('existentialSubtext');
+
+      questionEl.textContent = questionData.question;
+      optionsEl.innerHTML = '';
+      subtextEl.textContent = '';
+
+      questionData.options.forEach((opt, i) => {
+        const btn = document.createElement('button');
+        btn.className = 'existential-btn';
+        btn.textContent = opt.text;
+        btn.onclick = () => {
+          subtextEl.textContent = opt.subtext;
+          subtextEl.style.color = '#333';
+
+          setTimeout(() => {
+            overlay.classList.remove('active');
+            setTimeout(() => {
+              if (callback) callback();
+            }, 300);
+          }, 1500);
+        };
+        optionsEl.appendChild(btn);
+      });
+
+      overlay.classList.add('active');
+    }
+
+    function maybeExistentialBreak(callback) {
+      if (Math.random() < 0.5) {
+        triggerExistentialBreak(callback);
+      } else {
+        if (callback) callback();
+      }
+    }
+
+    // ============================================
+    // FEATURE 4: The Watching Eye
+    // ============================================
+
+    const eyeObservations = [
+      "Interesting reaction time.",
+      "Noted.",
+      "We saw that.",
+      "Fascinating.",
+      "Your hesitation has been logged.",
+      "Processing your behavior...",
+      "Data collected.",
+      "Pattern recognized."
+    ];
+
+    let watchingEyeActive = false;
+    let frameCount = 0;
+    let eyeCommentaryTimeout = null;
+
+    function initWatchingEye() {
+      const eye = document.getElementById('watchingEye');
+      const frameCounter = document.getElementById('frameCounter');
+
+      setTimeout(() => {
+        watchingEyeActive = true;
+        eye.classList.add('visible');
+
+        setInterval(() => {
+          if (watchingEyeActive) {
+            frameCount++;
+            frameCounter.textContent = String(frameCount).padStart(4, '0');
+          }
+        }, 100);
+
+        setInterval(() => {
+          if (watchingEyeActive && Math.random() < 0.4) {
+            showEyeCommentary(randomFrom(eyeObservations));
+          }
+        }, 8000);
+
+      }, 15000);
+    }
+
+    function showEyeCommentary(text) {
+      const commentary = document.getElementById('eyeCommentary');
+      if (eyeCommentaryTimeout) clearTimeout(eyeCommentaryTimeout);
+
+      commentary.textContent = text;
+      commentary.classList.add('visible');
+
+      eyeCommentaryTimeout = setTimeout(() => {
+        commentary.classList.remove('visible');
+      }, 3000);
+    }
+
+    function triggerEyeOnAction() {
+      if (!watchingEyeActive) return;
+      if (Math.random() < 0.2) {
+        showEyeCommentary(randomFrom(eyeObservations));
+      }
+    }
+
+    // ============================================
+    // FEATURE 5: Achievement Unlocked
+    // ============================================
+
+    const achievements = {
+      hover: [
+        { icon: "🔍", title: "Cursor Explorer", desc: "Hovered excessively", xp: "-5 XP" }
+      ],
+      stillness: [
+        { icon: "🗿", title: "Statue Mode", desc: "Didn't move for 5 seconds", xp: "Wake up" }
+      ],
+      wrong: [
+        { icon: "❌", title: "Almost!", desc: "Got it wrong. Again.", xp: "Participation trophy" },
+        { icon: "🔄", title: "Persistence Award", desc: "Multiple failed attempts", xp: "Keep trying!" }
+      ],
+      speed: [
+        { icon: "⚡", title: "Speedrunner?", desc: "That was suspiciously fast", xp: "Bot detected?" }
+      ],
+      time: [
+        { icon: "🕐", title: "Time Waster", desc: "Spent 1 minute on this", xp: "You'll never get this back" },
+        { icon: "⏰", title: "Still Here?", desc: "2 minutes and counting", xp: "Dedication?" }
+      ],
+      misc: [
+        { icon: "🏆", title: "Achievement Unlocked", desc: "A meaningless achievement", xp: "Congratulations?" },
+        { icon: "🎮", title: "Gamification Victim", desc: "You actually care about these", xp: "No judgment." }
+      ]
+    };
+
+    let achievementState = {
+      lastShown: {},
+      showingPopup: false,
+      totalTime: 0,
+      wrongCount: 0,
+      queue: []
+    };
+
+    function initAchievements() {
+      setInterval(() => {
+        achievementState.totalTime++;
+
+        if (achievementState.totalTime === 60) {
+          queueAchievement(achievements.time[0]);
+        } else if (achievementState.totalTime === 120) {
+          queueAchievement(achievements.time[1]);
+        }
+      }, 1000);
+    }
+
+    function queueAchievement(achievement) {
+      if (!achievement) return;
+
+      const now = Date.now();
+      if (achievementState.lastShown[achievement.title] &&
+          now - achievementState.lastShown[achievement.title] < 30000) {
+        return;
+      }
+      achievementState.lastShown[achievement.title] = now;
+
+      achievementState.queue.push(achievement);
+      processAchievementQueue();
+    }
+
+    function processAchievementQueue() {
+      if (achievementState.showingPopup || achievementState.queue.length === 0) return;
+
+      achievementState.showingPopup = true;
+      const achievement = achievementState.queue.shift();
+
+      const popup = document.getElementById('achievementPopup');
+      document.getElementById('achievementIcon').textContent = achievement.icon;
+      document.getElementById('achievementTitle').textContent = achievement.title;
+      document.getElementById('achievementDesc').textContent = achievement.desc;
+      document.getElementById('achievementXp').textContent = achievement.xp;
+
+      playAchievementSound();
+
+      requestAnimationFrame(() => {
+        popup.classList.add('visible');
+      });
+
+      setTimeout(() => {
+        popup.classList.remove('visible');
+        setTimeout(() => {
+          achievementState.showingPopup = false;
+          processAchievementQueue();
+        }, 500);
+      }, 4000);
+    }
+
+    function playAchievementSound() {
+      if (!soundEnabled) return;
+      try {
+        const ctx = getInteractionCtx();
+        const now = ctx.currentTime;
+        const gain = ctx.createGain();
+
+        const osc = ctx.createOscillator();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(523, now);
+        osc.frequency.setValueAtTime(659, now + 0.1);
+        osc.frequency.setValueAtTime(784, now + 0.2);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        gain.gain.setValueAtTime(0.15, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+
+        osc.start(now);
+        osc.stop(now + 0.4);
+      } catch(e) { /* silent fail */ }
+    }
+
+    function triggerActionAchievement(type) {
+      if (type === 'wrong') {
+        achievementState.wrongCount++;
+        if (achievementState.wrongCount % 2 === 0) {
+          queueAchievement(randomFrom(achievements.wrong));
+        }
+      } else if (type === 'fast') {
+        queueAchievement(randomFrom(achievements.speed));
+      } else if (type === 'hover') {
+        queueAchievement(randomFrom(achievements.hover));
+      }
+    }
+
+    // ============================================
     // INITIALIZATION
     // ============================================
 
@@ -2903,8 +3880,18 @@
     document.body.style.transition = 'background-color 1.2s ease-in-out';
 
     startTimer();
+    initSoundToggle();
+    initDarkModeToggle();
     initStage1();
     startContainerTitleTimer();
+
+    // ============================================
+    // NEW FEATURES INITIALIZATION
+    // ============================================
+    startJudgmentTimer();
+    initCursorCommentary();
+    initWatchingEye();
+    initAchievements();
 
     // Interaction sounds: play tick/dink/clunk on clicks, submit sound on buttons
     document.querySelector('.captcha-container').addEventListener('click', (e) => {

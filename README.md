@@ -19,7 +19,10 @@ It's a CAPTCHA. You click the button, prove you're human, and move on with your 
 - ✅ A checkbox, because of course
 - 🔢 Distorted code entry that plays fair (mostly)
 - 💬 Helpful messages that get increasingly... creative
-- 🥚 Easter eggs
+- 🥚 Easter eggs (Konami code, persistent clicking rewards, Grue ending)
+- 🔊 Toggleable sound effects
+- 🌙 Dark mode support
+- 📱 Mobile responsive design
 
 ## Running it
 
